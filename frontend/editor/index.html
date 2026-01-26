@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slim Presentation Editor - Web.Tech Style</title>
+    <link rel="stylesheet" href="editor.css">
+    <link rel="stylesheet" href="themes.css">
+</head>
+<body class="theme-light">
+    <div class="editor-container">
+        <header class="editor-header">
+            <div class="logo">
+                <h1>📊 Slim Editor</h1>
+                <span class="subtitle">Web Technologies Presentation System</span>
+            </div>
+            
+            <div class="toolbar">
+                <button id="btn-new" class="btn btn-primary" title="Нова презентация">
+                    <span class="icon">➕</span> Нова
+                </button>
+                <button id="btn-open" class="btn btn-secondary" title="Отвори презентация">
+                    <span class="icon">📂</span> Отвори
+                </button>
+                <button id="btn-save" class="btn btn-success" title="Запази">
+                    <span class="icon">💾</span> Запази
+                </button>
+                <button id="btn-validate" class="btn btn-info" title="Валидирай">
+                    <span class="icon">✓</span> Валидирай
+                </button>
+                <button id="btn-preview" class="btn btn-accent" title="Преглед">
+                    <span class="icon">👁</span> Преглед
+                </button>
+                
+                <div class="separator"></div>
+                
+                <select id="presentation-type" class="select-type">
+                    <option value="lecture">Лекция</option>
+                    <option value="tutorial">Упражнение</option>
+                    <option value="project">Проект</option>
+                    <option value="demo">Демо</option>
+                </select>
+                
+                <button id="btn-theme" class="btn btn-icon" title="Смени тема">
+                    <span class="icon">🌓</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="editor-main">
+            <aside class="file-panel">
+                <div class="panel-header">
+                    <h3>Презентации</h3>
+                    <button id="btn-refresh" class="btn-small">🔄</button>
+                </div>
+                <div class="file-list" id="file-list">
+                </div>
+            </aside>
+
+            <main class="editor-area">
+                <div class="editor-tabs">
+                    <button class="tab active" data-tab="edit">
+                        <span class="icon">✏️</span> Редактиране
+                    </button>
+                    <button class="tab" data-tab="help">
+                        <span class="icon">❓</span> Синтаксис
+                    </button>
+                </div>
+
+                <div class="tab-content active" data-content="edit">
+                    <div class="editor-info">
+                        <input type="text" id="presentation-title" 
+                               class="input-title" 
+                               placeholder="Име на презентацията...">
+                        <span class="file-status" id="file-status">●</span>
+                        <span class="char-count" id="char-count">0 символа</span>
+                    </div>
+                    
+                    <textarea id="slim-editor" 
+                              class="code-editor" 
+                              placeholder="Започни с # за команди...
+Пример:
+#title Заглавие на слайд
+#type text-only
+#data content=Съдържание на слайда
+
+#slide
+#title Втори слайд
+#type image-text
+#data image=image.jpg;text=Описание"></textarea>
+                </div>
+
+                <div class="tab-content" data-content="help">
+                    <div class="syntax-help">
+                        <h2>Slim Синтаксис - Ръководство</h2>
+                        
+                        <section class="help-section">
+                            <h3>Основни команди</h3>
+                            <div class="code-example">
+                                <code>#title</code> - Заглавие на слайд<br>
+                                <code>#type</code> - Тип на слайд<br>
+                                <code>#data</code> - Данни на слайд<br>
+                                <code>#slide</code> - Нов слайд
+                            </div>
+                        </section>
+
+                        <section class="help-section">
+                            <h3>Типове слайдове</h3>
+                            <ul>
+                                <li><code>title</code> - Заглавен слайд</li>
+                                <li><code>text-only</code> - Само текст</li>
+                                <li><code>image-text</code> - Изображение + текст</li>
+                                <li><code>image-left</code> - Изображение отляво</li>
+                                <li><code>image-right</code> - Изображение отдясно</li>
+                                <li><code>two-column</code> - Две колони</li>
+                                <li><code>code</code> - Код блок</li>
+                                <li><code>list</code> - Списък</li>
+                            </ul>
+                        </section>
+
+                        <section class="help-section">
+                            <h3>Примери</h3>
+                            <div class="example-box">
+                                <h4>Заглавен слайд</h4>
+                                <pre><code>#title Въведение в Web Technologies
+#type title
+#data subtitle=Лекция 1;author=Име Фамилия</code></pre>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Текстов слайд</h4>
+                                <pre><code>#slide
+#title HTML Основи
+#type text-only
+#data content=HTML е маркиращ език за създаване на уеб страници.</code></pre>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Слайд с изображение</h4>
+                                <pre><code>#slide
+#title CSS Grid Layout
+#type image-text
+#data image=grid.png;text=Grid система за двумерни лейаути</code></pre>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </main>
+
+            <aside class="info-panel">
+                <div class="panel-header">
+                    <h3>Валидация</h3>
+                </div>
+                <div class="validation-output" id="validation-output">
+                    <div class="validation-empty">
+                        <span class="icon">ℹ️</span>
+                        <p>Натиснете "Валидирай" за проверка на синтаксиса</p>
+                    </div>
+                </div>
+
+                <div class="panel-header" style="margin-top: 20px;">
+                    <h3>Информация</h3>
+                </div>
+                <div class="info-stats" id="info-stats">
+                    <div class="stat">
+                        <span class="stat-label">Слайдове:</span>
+                        <span class="stat-value" id="slide-count">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Тип:</span>
+                        <span class="stat-value" id="current-type">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Редове:</span>
+                        <span class="stat-value" id="line-count">0</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="status-message">Готов</span>
+            </div>
+            <div class="status-right">
+                <span id="cursor-position">Ред: 1, Кол: 1</span>
+            </div>
+        </footer>
+    </div>
+
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Преглед на презентация</h2>
+                <button class="modal-close" id="close-preview">&times;</button>
+            </div>
+            <div class="modal-body" id="preview-content">
+            </div>
+        </div>
+    </div>
+
+    <script src="slimValidator.js"></script>
+    <script src="fileManager.js"></script>
+    <script src="syntaxHighlight.js"></script>
+    <script src="editor.js"></script>
+</body>
+</html>
