@@ -606,7 +606,7 @@ body {
     padding: 10px 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: var(--radius);
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(205, 247, 250, 0.742);
     color: white;
     font-size: 0.9rem;
     font-weight: 600;
@@ -616,14 +616,14 @@ body {
 }
 
 .select-type:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(110, 99, 99, 0.831);
+    border-color: rgba(130, 111, 111, 0.5);
 }
 
 .select-type:focus {
     outline: none;
     border-color: white;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(89, 86, 86, 0.2);
 }
 
 /* ========== STATUS BAR ========== */
