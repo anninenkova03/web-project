@@ -1,29 +1,32 @@
 let fileManager;
 let validator;
-let highlighter;
 let autoSaveInterval;
+let currentTheme = 'light';
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Editor initialization...');
     initializeEditor();
 });
 
 function initializeEditor() {
     fileManager = new FileManager();
-    validator = new SlimValidator();
     
-    const editorTextarea = document.getElementById('slim-editor');
-    highlighter = new SyntaxHighlighter(editorTextarea);
+    if (typeof SlimValidator !== 'undefined') {
+        validator = new SlimValidator();
+    }
     
     initializeUI();
-    initializeEventListeners();
+    setupEventListeners();
     loadFileList();
     
-    // Auto-save на всеки 30 секунди
     startAutoSave();
     
     loadLastOrCreateNew();
     
-    console.log('✓ Editor initialized');
+    loadTheme();
+    
+    console.log('✅ Editor ready!');
+    updateStatus('Готов за работа');
 }
 
 function initializeUI() {
@@ -44,597 +47,553 @@ function initializeUI() {
     });
 }
 
-
-function initializeEventListeners() {
+function setupEventListeners() {
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
     document.getElementById('btn-validate').addEventListener('click', handleValidate);
     document.getElementById('btn-preview').addEventListener('click', handlePreview);
-    document.getElementById('btn-theme').addEventListener('click', handleThemeToggle);
+    document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     document.getElementById('btn-refresh').addEventListener('click', loadFileList);
     
     const editor = document.getElementById('slim-editor');
-    editor.addEventListener('input', handleEditorInput);
-    editor.addEventListener('keydown', handleEditorKeydown);
-    editor.addEventListener('click', updateCursorPosition);
+    editor.addEventListener('input', handleEditorChange);
     editor.addEventListener('keyup', updateCursorPosition);
+    editor.addEventListener('click', updateCursorPosition);
     
-    const titleInput = document.getElementById('presentation-title');
-    titleInput.addEventListener('input', handleTitleChange);
+    document.getElementById('presentation-title').addEventListener('input', handleTitleChange);
     
-    const typeSelect = document.getElementById('presentation-type');
-    typeSelect.addEventListener('change', handleTypeChange);
+    document.getElementById('presentation-type').addEventListener('change', handleTypeChange);
     
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', handleTabSwitch);
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
     
     document.getElementById('close-preview').addEventListener('click', closePreview);
-    document.getElementById('preview-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
+    document.getElementById('preview-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'preview-modal') {
             closePreview();
         }
     });
     
-    document.addEventListener('keydown', handleGlobalKeyboard);
-    
-    window.addEventListener('beforeunload', function(e) {
-        if (fileManager.hasUnsavedChanges()) {
-            e.preventDefault();
-            e.returnValue = '';
-            return '';
-        }
-    });
-}
-
-function loadFileList() {
-    const fileList = document.getElementById('file-list');
-    const presentations = fileManager.getAll();
-    
-    if (presentations.length === 0) {
-        fileList.innerHTML = `
-            <div class="empty-state">
-                <p>Няма презентации</p>
-                <button class="btn-small" onclick="handleNew()">Създай нова</button>
-            </div>
-        `;
-        return;
-    }
-    
-    fileList.innerHTML = '';
-    
-    presentations.forEach(pres => {
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        if (fileManager.currentFile && fileManager.currentFile.id === pres.id) {
-            item.classList.add('active');
-        }
-        
-        const lastModified = new Date(pres.lastModified);
-        const dateStr = formatDate(lastModified);
-        
-        item.innerHTML = `
-            <div class="file-name">${escapeHtml(pres.title)}</div>
-            <div class="file-meta">
-                ${pres.type} • ${dateStr}
-            </div>
-        `;
-        
-        item.addEventListener('click', () => loadPresentation(pres.id));
-        
-        item.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            showContextMenu(e, pres);
-        });
-        
-        fileList.appendChild(item);
-    });
-}
-
-function loadPresentation(id) {
-    if (fileManager.hasUnsavedChanges()) {
-        if (!confirm('Имате незапазени промени. Искате ли да продължите?')) {
-            return;
-        }
-    }
-    
-    const presentation = fileManager.load(id);
-    if (!presentation) {
-        showStatus('Грешка при зареждане', 'error');
-        return;
-    }
-    
-    document.getElementById('slim-editor').value = presentation.content;
-    document.getElementById('presentation-title').value = presentation.title;
-    document.getElementById('presentation-type').value = presentation.type;
-    
-    loadFileList();
-    updateStatistics();
-    showStatus(`Заредена: ${presentation.title}`, 'success');
-    
-    document.getElementById('validation-output').innerHTML = `
-        <div class="validation-empty">
-            <span class="icon">ℹ️</span>
-            <p>Натиснете "Валидирай" за проверка на синтаксиса</p>
-        </div>
-    `;
+    document.addEventListener('keydown', handleKeyboardShortcuts);
 }
 
 function handleNew() {
     if (fileManager.hasUnsavedChanges()) {
-        if (!confirm('Имате незапазени промени. Искате ли да създадете нова презентация?')) {
+        if (!confirm('Имате незапазени промени! Искате ли да създадете нова презентация?')) {
             return;
         }
     }
     
-    const title = prompt('Име на презентацията:', 'Нова презентация');
+    const title = prompt('Име на новата презентация:', 'Нова презентация');
     if (!title) return;
     
     const type = document.getElementById('presentation-type').value;
     const presentation = fileManager.createNew(title, type);
     
-    document.getElementById('slim-editor').value = presentation.content;
-    document.getElementById('presentation-title').value = presentation.title;
-    
+    loadPresentationInEditor(presentation);
     loadFileList();
-    updateStatistics();
-    showStatus('Създадена нова презентация', 'success');
+    updateStatus(`✅ Създадена: ${title}`);
 }
 
 function handleOpen() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.slim,.txt';
-    
-    input.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        fileManager.import(file)
-            .then(presentation => {
-                loadPresentation(presentation.id);
-                showStatus(`Импортирана: ${presentation.title}`, 'success');
-            })
-            .catch(err => {
-                showStatus('Грешка при импорт: ' + err.message, 'error');
-            });
-    });
-    
-    input.click();
+    console.log('📂 Отваряне на file picker...');
+    fileManager.showImportDialog();
 }
 
 function handleSave() {
-    const content = document.getElementById('slim-editor').value;
-    const title = document.getElementById('presentation-title').value || 'Без име';
+    const editor = document.getElementById('slim-editor');
+    const titleInput = document.getElementById('presentation-title');
     
-    const presentation = fileManager.save(content, title);
+    const content = editor.value;
+    const title = titleInput.value || 'Без име';
     
-    if (presentation) {
-        loadFileList();
-        updateFileStatus('saved');
-        showStatus('Запазено успешно', 'success');
-    } else {
-        showStatus('Грешка при запазване', 'error');
+    if (!content.trim()) {
+        alert('⚠️ Няма съдържание за запазване!');
+        return;
     }
+    
+    fileManager.save(content, title);
+    
+    document.getElementById('file-status').textContent = '✓';
+    document.getElementById('file-status').style.color = 'var(--success)';
+    
+    loadFileList();
+    updateStatus(`💾 Запазена: ${title}`);
+    showStatus('Презентацията е запазена', 'success');
 }
 
 function handleValidate() {
-    const content = document.getElementById('slim-editor').value;
-    const result = validator.validate(content);
-    
-    displayValidationResult(result);
-    updateStatistics();
-}
-
-function displayValidationResult(result) {
-    const output = document.getElementById('validation-output');
-    
-    let html = '';
-    
-    html += `<div class="validation-message ${result.valid ? 'success' : 'error'}">
-        <strong>${result.summary}</strong>
-    </div>`;
-    
-    if (result.errors.length > 0) {
-        result.errors.forEach(err => {
-            html += `<div class="validation-message error">
-                <strong>Ред ${err.line}:</strong> ${escapeHtml(err.message)}
-            </div>`;
-        });
+    if (!validator) {
+        alert('❌ Validator не е зареден!');
+        return;
     }
     
-    if (result.warnings.length > 0) {
-        result.warnings.forEach(warn => {
-            html += `<div class="validation-message warning">
-                <strong>Ред ${warn.line}:</strong> ${escapeHtml(warn.message)}
-            </div>`;
-        });
+    const editor = document.getElementById('slim-editor');
+    const content = editor.value;
+    
+    if (!content.trim()) {
+        alert('⚠️ Няма съдържание за валидиране!');
+        return;
     }
     
-    if (result.slides.length > 0) {
-        html += `<div class="validation-message success">
-            <strong>Намерени ${result.slides.length} слайда:</strong><br>`;
-        
-        result.slides.forEach((slide, idx) => {
-            html += `${idx + 1}. ${escapeHtml(slide.title || 'Без заглавие')} (${slide.type || 'без тип'})<br>`;
-        });
-        
-        html += `</div>`;
+    try {
+        const result = validator.validate(content);
+        displayValidationResults(result);
+        updateStatus(result.isValid ? '✅ Валидна презентация' : '⚠️ Има грешки');
+    } catch (error) {
+        console.error('Грешка при валидация:', error);
+        alert('❌ Грешка при валидация: ' + error.message);
     }
-    
-    output.innerHTML = html;
 }
 
 function handlePreview() {
-    const content = document.getElementById('slim-editor').value;
-    const result = validator.validate(content);
+    const editor = document.getElementById('slim-editor');
+    const content = editor.value;
     
-    if (!result.valid) {
-        if (!confirm('Презентацията съдържа грешки. Искате ли да я видите въпреки това?')) {
-            return;
-        }
+    if (!content.trim()) {
+        alert('⚠️ Няма съдържание за преглед!');
+        return;
     }
     
+    const slides = parseSlimContent(content);
     const modal = document.getElementById('preview-modal');
     const previewContent = document.getElementById('preview-content');
     
-    let html = '<div class="preview-slides">';
-    
-    if (result.slides.length === 0) {
-        html += '<p>Няма слайдове за показване</p>';
-    } else {
-        result.slides.forEach((slide, idx) => {
-            html += generateSlidePreview(slide, idx + 1);
-        });
-    }
-    
-    html += '</div>';
-    
-    previewContent.innerHTML = html;
+    previewContent.innerHTML = generatePreviewHTML(slides);
     modal.classList.add('active');
-}
-
-function generateSlidePreview(slide, number) {
-    let html = `
-        <div class="preview-slide" data-slide="${number}">
-            <div class="slide-number">Слайд ${number}</div>
-            <h2 class="slide-title">${escapeHtml(slide.title || 'Без заглавие')}</h2>
-            <div class="slide-type-badge">${escapeHtml(slide.type || 'unknown')}</div>
-            <div class="slide-content">
-    `;
     
-    switch (slide.type) {
-        case 'title':
-            html += `<div class="title-slide">`;
-            if (slide.data.subtitle) {
-                html += `<p class="subtitle">${escapeHtml(slide.data.subtitle)}</p>`;
-            }
-            if (slide.data.author) {
-                html += `<p class="author">${escapeHtml(slide.data.author)}</p>`;
-            }
-            html += `</div>`;
-            break;
-            
-        case 'text-only':
-            if (slide.data.content) {
-                html += `<p>${escapeHtml(slide.data.content)}</p>`;
-            }
-            break;
-            
-        case 'image-text':
-        case 'image-left':
-        case 'image-right':
-            html += `<div class="image-text-slide">`;
-            if (slide.data.image) {
-                html += `<div class="image-placeholder">🖼️ ${escapeHtml(slide.data.image)}</div>`;
-            }
-            if (slide.data.text || slide.data.content) {
-                html += `<p>${escapeHtml(slide.data.text || slide.data.content)}</p>`;
-            }
-            html += `</div>`;
-            break;
-            
-        case 'code':
-            const code = slide.data.code || slide.data.content || '';
-            const lang = slide.data.language || 'text';
-            html += `<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`;
-            break;
-            
-        case 'list':
-            if (slide.data.items) {
-                const items = slide.data.items.split(';');
-                html += '<ul>';
-                items.forEach(item => {
-                    html += `<li>${escapeHtml(item.trim())}</li>`;
-                });
-                html += '</ul>';
-            }
-            break;
-            
-        default:
-            html += `<p><em>Непознат тип слайд</em></p>`;
-            
-            if (Object.keys(slide.data).length > 0) {
-                html += '<div class="slide-data"><strong>Данни:</strong><ul>';
-                for (let [key, value] of Object.entries(slide.data)) {
-                    html += `<li><strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}</li>`;
-                }
-                html += '</ul></div>';
-            }
-    }
-    
-    html += `
-            </div>
-        </div>
-    `;
-    
-    return html;
+    updateStatus('👁️ Преглед на презентация');
 }
 
 function closePreview() {
-    document.getElementById('preview-modal').classList.remove('active');
+    const modal = document.getElementById('preview-modal');
+    modal.classList.remove('active');
 }
 
-function handleThemeToggle() {
-    document.body.classList.toggle('theme-dark');
-    document.body.classList.toggle('theme-light');
+function handleEditorChange() {
+    const editor = document.getElementById('slim-editor');
+    const content = editor.value;
     
-    const isDark = document.body.classList.contains('theme-dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
-    showStatus(`Тема: ${isDark ? 'тъмна' : 'светла'}`, 'info');
-}
-
-function handleEditorInput(e) {
-    fileManager.markDirty();
-    updateFileStatus('editing');
-    updateStatistics();
-    highlighter.applyHighlighting();
-    
-    const content = e.target.value;
     document.getElementById('char-count').textContent = `${content.length} символа`;
-}
-
-function handleEditorKeydown(e) {
-    if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = e.target.selectionStart;
-        const end = e.target.selectionEnd;
-        const value = e.target.value;
-        
-        e.target.value = value.substring(0, start) + '    ' + value.substring(end);
-        e.target.selectionStart = e.target.selectionEnd = start + 4;
-        
-        handleEditorInput(e);
-    }
-}
-
-function handleTitleChange(e) {
+    
+    const slideCount = fileManager.countSlides(content);
+    document.getElementById('slide-count').textContent = slideCount;
+    
+    const lineCount = content.split('\n').length;
+    document.getElementById('line-count').textContent = lineCount;
+    
     fileManager.markDirty();
-    updateFileStatus('editing');
+    document.getElementById('file-status').textContent = '●';
+    document.getElementById('file-status').style.color = 'var(--warning)';
+}
+
+function handleTitleChange() {
+    fileManager.markDirty();
 }
 
 function handleTypeChange(e) {
-    fileManager.markDirty();
-    updateFileStatus('editing');
-}
-
-function handleTabSwitch(e) {
-    const tabName = e.currentTarget.dataset.tab;
-    
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
-    e.currentTarget.classList.add('active');
-    document.querySelector(`[data-content="${tabName}"]`).classList.add('active');
-}
-
-function handleGlobalKeyboard(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-    }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        handleNew();
-    }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-        e.preventDefault();
-        handleOpen();
-    }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        handleValidate();
-    }
-    
-    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-        e.preventDefault();
-        handlePreview();
+    const currentFile = fileManager.getCurrentFile();
+    if (currentFile) {
+        currentFile.type = e.target.value;
+        document.getElementById('current-type').textContent = e.target.value;
     }
 }
 
 function updateCursorPosition() {
     const editor = document.getElementById('slim-editor');
-    const position = editor.selectionStart;
-    const text = editor.value.substring(0, position);
+    const text = editor.value.substring(0, editor.selectionStart);
     const lines = text.split('\n');
-    const line = lines.length;
+    const row = lines.length;
     const col = lines[lines.length - 1].length + 1;
     
-    document.getElementById('cursor-position').textContent = `Ред: ${line}, Кол: ${col}`;
+    document.getElementById('cursor-position').textContent = `Ред: ${row}, Кол: ${col}`;
 }
 
-function updateStatistics() {
-    const content = document.getElementById('slim-editor').value;
-    const stats = validator.getStatistics(content);
+function loadFileList() {
+    const fileList = document.getElementById('file-list');
+    const presentations = fileManager.sortByDate();
     
-    document.getElementById('slide-count').textContent = stats.slideCount;
-    document.getElementById('line-count').textContent = stats.totalLines;
+    if (presentations.length === 0) {
+        fileList.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                <p>Няма презентации</p>
+                <small>Създайте нова или импортирайте файл</small>
+            </div>
+        `;
+        return;
+    }
     
-    const currentFile = fileManager.getCurrentFile();
-    if (currentFile) {
-        document.getElementById('current-type').textContent = currentFile.type;
+    fileList.innerHTML = presentations.map(p => {
+        const isActive = p.id === fileManager.getCurrentFile()?.id;
+        return `
+            <div class="file-item ${isActive ? 'active' : ''}" 
+                 data-id="${p.id}"
+                 onclick="loadPresentation('${p.id}')"
+                 oncontextmenu="showContextMenu(event, '${p.id}'); return false;">
+                <div class="file-name">${escapeHtml(p.title)}</div>
+                <div class="file-meta">
+                    ${p.slideCount} слайда • ${p.type}
+                    <br>
+                    <small>${formatDate(p.lastModified)}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function loadPresentation(id) {
+    const presentation = fileManager.load(id);
+    if (presentation) {
+        loadPresentationInEditor(presentation);
+        updateStatus(`📂 Заредена: ${presentation.title}`);
     }
 }
 
-function updateFileStatus(status) {
-    const statusIcon = document.getElementById('file-status');
+function loadPresentationInEditor(presentation) {
+    if (!presentation) return;
     
-    switch (status) {
-        case 'saved':
-            statusIcon.textContent = '●';
-            statusIcon.style.color = 'var(--success)';
-            statusIcon.classList.remove('saving');
-            break;
-        case 'editing':
-            statusIcon.textContent = '●';
-            statusIcon.style.color = 'var(--info)';
-            statusIcon.classList.remove('saving');
-            break;
-        case 'saving':
-            statusIcon.textContent = '●';
-            statusIcon.style.color = 'var(--info)';
-            statusIcon.classList.add('saving');
-            break;
-        case 'error':
-            statusIcon.textContent = '●';
-            statusIcon.style.color = 'var(--danger)';
-            statusIcon.classList.remove('saving');
-            break;
-    }
+    document.getElementById('presentation-title').value = presentation.title;
+    document.getElementById('slim-editor').value = presentation.content;
+    document.getElementById('presentation-type').value = presentation.type;
+    
+    document.getElementById('slide-count').textContent = presentation.slideCount;
+    document.getElementById('current-type').textContent = presentation.type;
+    document.getElementById('char-count').textContent = `${presentation.content.length} символа`;
+    document.getElementById('line-count').textContent = presentation.content.split('\n').length;
+    
+    document.getElementById('file-status').textContent = '✓';
+    document.getElementById('file-status').style.color = 'var(--success)';
+    
+    loadFileList();
 }
 
-function showStatus(message, type = 'info') {
-    const statusEl = document.getElementById('status-message');
-    statusEl.textContent = message;
+function showContextMenu(e, presentationId) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    switch (type) {
-        case 'success':
-            statusEl.style.color = 'var(--success)';
-            break;
-        case 'error':
-            statusEl.style.color = 'var(--danger)';
-            break;
-        case 'warning':
-            statusEl.style.color = '#f59e0b';
-            break;
-        default:
-            statusEl.style.color = 'var(--text-secondary)';
-    }
+    const presentation = fileManager.getAll().find(p => p.id === presentationId);
+    if (!presentation) return;
     
-    setTimeout(() => {
-        statusEl.textContent = 'Готов';
-        statusEl.style.color = 'var(--text-secondary)';
-    }, 3000);
-}
-
-function showContextMenu(e, presentation) {
-    const existing = document.querySelector('.context-menu');
-    if (existing) {
-        existing.remove();
-    }
+    const oldMenu = document.getElementById('context-menu');
+    if (oldMenu) oldMenu.remove();
     
     const menu = document.createElement('div');
-    menu.className = 'context-menu';
-    menu.style.position = 'fixed';
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.style.background = 'var(--bg-primary)';
-    menu.style.border = '1px solid var(--border)';
-    menu.style.borderRadius = 'var(--radius)';
-    menu.style.boxShadow = 'var(--shadow-lg)';
-    menu.style.padding = '8px';
-    menu.style.zIndex = '1000';
-    menu.style.minWidth = '150px';
+    menu.id = 'context-menu';
+    menu.style.cssText = `
+        position: fixed;
+        left: ${e.clientX}px;
+        top: ${e.clientY}px;
+        background: #7c86f0ff;
+        border: 2px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-xl);
+        padding: 8px;
+        z-index: 10000;
+        min-width: 200px;
+        animation: fadeIn 0.15s ease;
+    `;
     
     menu.innerHTML = `
-        <div class="menu-item" onclick="loadPresentation('${presentation.id}')">
-            📂 Отвори
+        <style>
+            #context-menu .menu-item {
+                padding: 12px 16px;
+                cursor: pointer;
+                border-radius: 8px;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 0.95rem;
+                font-weight: 500;
+                color: var(--text-primary);
+            }
+            #context-menu .menu-item:hover {
+                background: var(--bg-tertiary);
+                transform: translateX(4px);
+            }
+            #context-menu .menu-item.danger {
+                color: var(--danger);
+            }
+            #context-menu .menu-item.danger:hover {
+                background: var(--danger);
+                color: white;
+            }
+            #context-menu hr {
+                margin: 6px 0;
+                border: none;
+                border-top: 2px solid var(--border);
+            }
+        </style>
+        <div class="menu-item" onclick="loadPresentation('${presentation.id}'); closeContextMenu();">
+            <span style="font-size: 1.2rem;">📂</span> Отвори
         </div>
-        <div class="menu-item" onclick="exportPresentation('${presentation.id}')">
-            💾 Експортирай
+        <div class="menu-item" onclick="exportPresentation('${presentation.id}'); closeContextMenu();">
+            <span style="font-size: 1.2rem;">💾</span> Експортирай
         </div>
-        <div class="menu-item" onclick="duplicatePresentation('${presentation.id}')">
-            📋 Дублирай
+        <div class="menu-item" onclick="duplicatePresentation('${presentation.id}'); closeContextMenu();">
+            <span style="font-size: 1.2rem;">📋</span> Дублирай
         </div>
-        <hr style="margin: 4px 0; border: none; border-top: 1px solid var(--border);">
-        <div class="menu-item" style="color: var(--danger)" onclick="deletePresentation('${presentation.id}')">
-            🗑️ Изтрий
+        <hr>
+        <div class="menu-item danger" onclick="deletePresentation('${presentation.id}'); closeContextMenu();">
+            <span style="font-size: 1.2rem;">🗑️</span> Изтрий
         </div>
     `;
     
     document.body.appendChild(menu);
     
     setTimeout(() => {
-        document.addEventListener('click', function closeMenu() {
-            menu.remove();
-            document.removeEventListener('click', closeMenu);
-        });
+        document.addEventListener('click', closeContextMenu);
+        document.addEventListener('contextmenu', closeContextMenu);
     }, 10);
 }
 
-function exportPresentation(id) {
-    fileManager.export(id);
-    showStatus('Презентацията е изтеглена', 'success');
-}
-
-function duplicatePresentation(id) {
-    const original = fileManager.presentations.find(p => p.id === id);
-    if (!original) return;
-    
-    const newTitle = `${original.title} (копие)`;
-    const newPres = fileManager.createNew(newTitle, original.type);
-    newPres.content = original.content;
-    fileManager.save(newPres.content, newTitle);
-    
-    loadFileList();
-    showStatus('Презентацията е дублирана', 'success');
+function closeContextMenu() {
+    const menu = document.getElementById('context-menu');
+    if (menu) menu.remove();
+    document.removeEventListener('click', closeContextMenu);
+    document.removeEventListener('contextmenu', closeContextMenu);
 }
 
 function deletePresentation(id) {
-    const presentation = fileManager.presentations.find(p => p.id === id);
+    const presentation = fileManager.getAll().find(p => p.id === id);
     if (!presentation) return;
     
-    if (!confirm(`Сигурни ли сте, че искате да изтриете "${presentation.title}"?`)) {
+    if (!confirm(`🗑️ Сигурни ли сте, че искате да изтриете:\n\n"${presentation.title}"\n\nТова действие не може да бъде отменено!`)) {
         return;
     }
     
     fileManager.delete(id);
     loadFileList();
     
-    if (fileManager.currentFile === null || fileManager.currentFile.id === id) {
-        document.getElementById('slim-editor').value = '';
-        document.getElementById('presentation-title').value = '';
+    if (fileManager.getCurrentFile()?.id === id) {
+        const remaining = fileManager.getAll();
+        if (remaining.length > 0) {
+            loadPresentationInEditor(remaining[0]);
+        } else {
+            document.getElementById('slim-editor').value = '';
+            document.getElementById('presentation-title').value = '';
+            document.getElementById('slide-count').textContent = '0';
+            document.getElementById('char-count').textContent = '0 символа';
+            document.getElementById('line-count').textContent = '0';
+        }
     }
     
+    updateStatus(`🗑️ Изтрита: ${presentation.title}`);
     showStatus('Презентацията е изтрита', 'success');
 }
 
+function duplicatePresentation(id) {
+    const newPresentation = fileManager.duplicate(id);
+    if (newPresentation) {
+        loadFileList();
+        loadPresentationInEditor(newPresentation);
+        updateStatus(`📋 Дублирана презентация`);
+        showStatus('Презентацията е дублирана', 'success');
+    }
+}
+
+function exportPresentation(id) {
+    const result = fileManager.export(id, 'slim');
+    if (result) {
+        updateStatus(`💾 Експортирана: ${result.filename}`);
+        showStatus('Презентацията е изтеглена', 'success');
+    }
+}
+
+function displayValidationResults(result) {
+    const output = document.getElementById('validation-output');
+    
+    if (result.isValid) {
+        output.innerHTML = `
+            <div class="validation-message success">
+                <strong>✅ Валидна презентация!</strong>
+                <p>Няма открити грешки.</p>
+            </div>
+            <div class="validation-message success">
+                <strong>Статистика:</strong>
+                <p>Слайдове: ${result.slideCount}</p>
+            </div>
+        `;
+    } else {
+        const errorsHTML = result.errors.map(err => `
+            <div class="validation-message error">
+                <strong>❌ Грешка на ред ${err.line}</strong>
+                <p>${escapeHtml(err.message)}</p>
+            </div>
+        `).join('');
+        
+        const warningsHTML = result.warnings.map(warn => `
+            <div class="validation-message warning">
+                <strong>⚠️ Предупреждение на ред ${warn.line}</strong>
+                <p>${escapeHtml(warn.message)}</p>
+            </div>
+        `).join('');
+        
+        output.innerHTML = errorsHTML + warningsHTML;
+    }
+}
+
+function parseSlimContent(content) {
+    const lines = content.split('\n');
+    const slides = [];
+    let currentSlide = null;
+    
+    for (let line of lines) {
+        line = line.trim();
+        
+        if (line.startsWith('#slide') || (line.startsWith('#title') && !currentSlide)) {
+            if (currentSlide) slides.push(currentSlide);
+            currentSlide = { title: '', type: 'text-only', data: {} };
+        }
+        
+        if (currentSlide) {
+            if (line.startsWith('#title ')) {
+                currentSlide.title = line.substring(7);
+            } else if (line.startsWith('#type ')) {
+                currentSlide.type = line.substring(6);
+            } else if (line.startsWith('#data ')) {
+                const dataStr = line.substring(6);
+                const pairs = dataStr.split(';');
+                pairs.forEach(pair => {
+                    const [key, value] = pair.split('=');
+                    if (key && value) {
+                        currentSlide.data[key.trim()] = value.trim();
+                    }
+                });
+            }
+        }
+    }
+    
+    if (currentSlide) slides.push(currentSlide);
+    return slides;
+}
+
+function generatePreviewHTML(slides) {
+    return slides.map((slide, index) => `
+        <div class="preview-slide" style="
+            margin-bottom: 30px;
+            padding: 30px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border);
+        ">
+            <h3 style="color: var(--primary); margin-bottom: 20px;">
+                Слайд ${index + 1}: ${escapeHtml(slide.title)}
+            </h3>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">
+                <strong>Тип:</strong> ${slide.type}
+            </p>
+            ${generateSlideContent(slide)}
+        </div>
+    `).join('');
+}
+
+function generateSlideContent(slide) {
+    switch (slide.type) {
+        case 'title':
+            return `
+                <div style="text-align: center; padding: 40px;">
+                    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">${escapeHtml(slide.title)}</h1>
+                    ${slide.data.subtitle ? `<h2 style="font-size: 1.5rem; color: var(--text-secondary);">${escapeHtml(slide.data.subtitle)}</h2>` : ''}
+                    ${slide.data.author ? `<p style="margin-top: 20px; color: var(--text-muted);">${escapeHtml(slide.data.author)}</p>` : ''}
+                </div>
+            `;
+        case 'text-only':
+            return `<div style="padding: 20px;"><p style="font-size: 1.1rem; line-height: 1.8;">${escapeHtml(slide.data.content || '')}</p></div>`;
+        case 'list':
+            const items = slide.data.items ? slide.data.items.split(';') : [];
+            return `<ul style="padding: 20px; font-size: 1.1rem; line-height: 2;">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+        case 'code':
+            return `
+                <pre style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius); overflow-x: auto;"><code>${escapeHtml(slide.data.code || '')}</code></pre>
+                ${slide.data.content ? `<p style="margin-top: 15px; color: var(--text-secondary);">${escapeHtml(slide.data.content)}</p>` : ''}
+            `;
+        default:
+            return `<p>Тип: ${slide.type}</p>`;
+    }
+}
+
+function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(currentTheme);
+}
+
+function setTheme(theme) {
+    currentTheme = theme;
+    document.body.className = `theme-${theme}`;
+    localStorage.setItem('theme', theme);
+    
+    const icon = document.querySelector('#btn-theme .icon');
+    if (icon) {
+        icon.textContent = theme === 'dark' ? '☀️' : '🌓';
+    }
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+    
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.dataset.content === tabName);
+    });
+}
+
+function handleKeyboardShortcuts(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        handleNew();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+        e.preventDefault();
+        handleOpen();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        handlePreview();
+    }
+}
+
+
 function startAutoSave() {
     autoSaveInterval = setInterval(() => {
-        if (fileManager.hasUnsavedChanges() && fileManager.currentFile) {
-            console.log('Auto-saving...');
+        if (fileManager.hasUnsavedChanges() && fileManager.getCurrentFile()) {
+            console.log('💾 Auto-saving...');
             handleSave();
         }
-    }, 30000); // 30 seconds
+    }, 30000);
 }
 
 function loadLastOrCreateNew() {
     const presentations = fileManager.getAll();
     
     if (presentations.length > 0) {
-        const sorted = [...presentations].sort((a, b) => 
-            new Date(b.lastModified) - new Date(a.lastModified)
-        );
+        const sorted = fileManager.sortByDate();
         loadPresentation(sorted[0].id);
     } else {
         const newPres = fileManager.createNew('Моята първа презентация', 'lecture');
         loadPresentation(newPres.id);
     }
+}
+
+function updateStatus(message) {
+    document.getElementById('status-message').textContent = message;
+}
+
+function showStatus(message, type) {
+    updateStatus(message);
 }
 
 function escapeHtml(text) {
@@ -643,27 +602,31 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function formatDate(date) {
+function formatDate(isoString) {
+    const date = new Date(isoString);
     const now = new Date();
-    const diff = now - date;
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (diff < 60000) { // < 1 minute
-        return 'Сега';
-    } else if (diff < 3600000) { // < 1 hour
-        const mins = Math.floor(diff / 60000);
-        return `Преди ${mins} мин`;
-    } else if (diff < 86400000) { // < 1 day
-        const hours = Math.floor(diff / 3600000);
-        return `Преди ${hours} час${hours > 1 ? 'а' : ''}`;
-    } else {
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
-    }
+    if (diffMins < 1) return 'Току-що';
+    if (diffMins < 60) return `Преди ${diffMins} мин`;
+    if (diffHours < 24) return `Преди ${diffHours} ч`;
+    if (diffDays < 7) return `Преди ${diffDays} дни`;
+    
+    return date.toLocaleDateString('bg-BG');
 }
 
-(function loadTheme() {
-    const theme = localStorage.getItem('theme') || 'light';
-    document.body.classList.add(`theme-${theme}`);
-})();
+// Глобални функции за onclick
+window.loadPresentation = loadPresentation;
+window.loadFileList = loadFileList;
+window.loadPresentationInEditor = loadPresentationInEditor;
+window.updateStatus = updateStatus;
+window.deletePresentation = deletePresentation;
+window.duplicatePresentation = duplicatePresentation;
+window.exportPresentation = exportPresentation;
+window.showContextMenu = showContextMenu;
+window.closeContextMenu = closeContextMenu;
+
+console.log('📝 Editor script loaded');
