@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Презентации - Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Presentation Manager</h1>
+            <p class="subtitle">Управление и преглед на презентации</p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Търси презентация...">
+            </div>
+            <div class="view-toggle">
+                <button class="btn btn-secondary active" id="gridViewBtn">📊 Grid</button>
+                <button class="btn btn-secondary" id="listViewBtn">📋 List</button>
+            </div>
+            <button class="btn btn-primary" id="refreshBtn">🔄 Обнови</button>
+        </div>
+
+        <div id="loadingState" class="loading" style="display: none;">
+            Зареждане на презентации...
+        </div>
+
+        <div id="presentationsContainer" class="presentations-grid"></div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="dashboard.js"></script>
+</body>
+</html>
