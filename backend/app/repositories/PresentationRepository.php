@@ -1,0 +1,27 @@
+<?php
+
+class PresentationRepository {
+    private PDO $db;
+
+    public function __construct() {
+        $this->db = Database::get();
+    }
+
+    public function insert(Presentation $p): int {
+        $stmt = $this->db->prepare(
+            "INSERT INTO presentations (slug, title, presentation_type)
+             VALUES (?, ?, ?)"
+        );
+        $stmt->execute([$p->slug, $p->title, $p->type]);
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function all(): array {
+        return $this->db->query(
+            "SELECT p.*, COUNT(s.id) AS slides
+             FROM presentations p
+             LEFT JOIN slides s ON p.id = s.presentation_id
+             GROUP BY p.id"
+        )->fetchAll();
+    }
+}
