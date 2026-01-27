@@ -1,0 +1,51 @@
+{
+	"id": 2,
+	"title": "JavaScript Workshop",
+	"type": "workshop",
+	"author": "Team 2",
+	"date": "2026-01-20",
+	"slides": [
+		{
+			"order": 1,
+			"type": "title",
+			"title": "JavaScript Workshop",
+			"data": {
+				"subtitle": "Практическо упражнение",
+				"author": "Team 2"
+			}
+		},
+		{
+			"order": 2,
+			"type": "text-only",
+			"title": "Какво е JavaScript?",
+			"data": {
+				"content": "JavaScript е език за програмиране, използван за създаване на интерактивни уеб страници."
+			}
+		},
+		{
+			"order": 3,
+			"type": "code",
+			"title": "Пример: Променливи",
+			"data": {
+				"code": "let x = 5;\nlet y = 'Hello';",
+				"content": "Създаване на променливи в JavaScript"
+			}
+		},
+		{
+			"order": 4,
+			"type": "list",
+			"title": "Задача",
+			"data": {
+				"items": [ "Създайте функция", "Използвайте цикъл", "Покажете резултата в конзолата" ]
+			}
+		},
+		{
+			"order": 5,
+			"type": "text-only",
+			"title": "Въпроси?",
+			"data": {
+				"content": "Имате ли въпроси относно JavaScript?"
+			}
+		}
+	]
+}

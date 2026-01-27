@@ -1,0 +1,52 @@
+{
+	"id": 1,
+	"title": "Въведение в Web Technologies",
+	"type": "lecture",
+	"author": "Team 1",
+	"date": "2026-01-15",
+	"slides": [
+		{
+			"order": 1,
+			"type": "title",
+			"title": "Въведение в Web Technologies",
+			"data": {
+				"subtitle": "Лекция 1",
+				"author": "Team 1"
+			}
+		},
+		{
+			"order": 2,
+			"type": "list",
+			"title": "Какво ще научим?",
+			"data": {
+				"items": [ "HTML", "CSS", "JavaScript", "Архитектура на уеб приложения" ]
+			}
+		},
+		{
+			"order": 3,
+			"type": "image-text",
+			"title": "Трислойна архитектура",
+			"data": {
+				"image": "architecture.png",
+				"text": "Клиент, сървър, база данни"
+			}
+		},
+		{
+			"order": 4,
+			"type": "code",
+			"title": "Пример: HTML структура",
+			"data": {
+				"code": "<html>\n  <head></head>\n  <body></body>\n</html>",
+				"content": "Основна HTML структура"
+			}
+		},
+		{
+			"order": 5,
+			"type": "text-only",
+			"title": "Заключение",
+			"data": {
+				"content": "Уеб технологиите са основата на съвременния интернет."
+			}
+		}
+	]
+}
