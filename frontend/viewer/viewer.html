@@ -8,7 +8,6 @@
 </head>
 <body>
     <div class="viewer-container">
-        <!-- Header -->
         <div class="viewer-header">
             <div class="presentation-title" id="presentationTitle">Зареждане...</div>
             <div class="header-controls">
@@ -19,30 +18,19 @@
             </div>
         </div>
 
-        <!-- Main Slide Area -->
         <div class="slide-container">
-            <div class="slide" id="slideContent">
-                <!-- Slide content will be injected here -->
-            </div>
+            <div class="slide" id="slideContent"></div>
         </div>
 
-        <!-- Navigation -->
         <div class="navigation">
-            <button class="nav-button" id="prevBtn" disabled>
-                ← Предишен
-            </button>
-            
+            <button class="nav-button" id="prevBtn" disabled>← Предишен</button>
             <div class="progress-bar-container">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
-            
-            <button class="nav-button" id="nextBtn">
-                Следващ →
-            </button>
+            <button class="nav-button" id="nextBtn">Следващ →</button>
         </div>
     </div>
 
-    <!-- Keyboard Shortcuts Info -->
     <div class="shortcuts-info" id="shortcutsInfo">
         <p><strong>Клавишни комбинации:</strong></p>
         <p>← / → : Навигация</p>
@@ -50,7 +38,7 @@
         <p>Esc : Изход</p>
     </div>
 
-    <!-- Link to external JavaScript file -->
-    <script src="viewer.js"></script>
+    <script src="api-service.js"></script>
+    <script src="viewer-integrated.js"></script>
 </body>
 </html>

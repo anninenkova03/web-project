@@ -20,7 +20,6 @@ body {
     height: 100vh;
 }
 
-/* Header Controls */
 .viewer-header {
     background: #2d2d2d;
     padding: 15px 30px;
@@ -77,7 +76,6 @@ body {
     background: #555;
 }
 
-/* Main Slide Area */
 .slide-container {
     flex: 1;
     display: flex;
@@ -113,7 +111,6 @@ body {
     }
 }
 
-/* Slide Types */
 .slide-title {
     text-align: center;
 }
@@ -162,7 +159,6 @@ body {
     font-weight: bold;
 }
 
-/* Image + Text Layout */
 .slide-image-text {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -187,7 +183,6 @@ body {
     line-height: 1.7;
 }
 
-/* Code Slide */
 .slide-code pre {
     background: #2d2d2d;
     color: #f8f8f2;
@@ -204,7 +199,6 @@ body {
     margin-bottom: 20px;
 }
 
-/* Navigation Controls */
 .navigation {
     background: #2d2d2d;
     padding: 20px 40px;
@@ -257,7 +251,6 @@ body {
     border-radius: 4px;
 }
 
-/* Keyboard Shortcuts Info */
 .shortcuts-info {
     position: fixed;
     bottom: 80px;
@@ -280,7 +273,6 @@ body {
     color: #ccc;
 }
 
-/* Fullscreen Mode */
 .fullscreen-btn {
     background: transparent;
     border: 2px solid #667eea;
@@ -292,7 +284,6 @@ body {
     color: white;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .slide {
         padding: 30px;

@@ -1,4 +1,3 @@
-// === DATE & TIME UTILS ===
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('bg-BG', {
@@ -29,7 +28,6 @@ function formatTime(minutes) {
     return `${mins} мин`;
 }
 
-// === STRING UTILS ===
 function truncateText(text, maxLength = 100) {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
@@ -45,7 +43,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// === URL UTILS ===
 function getUrlParam(param) {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(param);
@@ -63,7 +60,6 @@ function removeUrlParam(param) {
     window.history.pushState({}, '', url);
 }
 
-// === STORAGE UTILS ===
 function setLocalStorage(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
@@ -86,7 +82,6 @@ function removeLocalStorage(key) {
     localStorage.removeItem(key);
 }
 
-// === VALIDATION UTILS ===
 function isValidEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
@@ -101,7 +96,6 @@ function isValidUrl(string) {
     }
 }
 
-// === ARRAY UTILS ===
 function uniqueArray(array) {
     return [...new Set(array)];
 }
@@ -117,7 +111,6 @@ function sortByProperty(array, property, ascending = true) {
     });
 }
 
-// === SLIDE TYPE UTILS ===
 function getSlideTypeLabel(type) {
     const labels = {
         'title': '📌 Заглавие',
@@ -146,9 +139,7 @@ function getSlideTypeColor(type) {
     return colors[type] || '#718096';
 }
 
-// === NOTIFICATION UTILS ===
 function showNotification(message, type = 'info') {
-    // Създаване на notification елемент
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
@@ -158,7 +149,6 @@ function showNotification(message, type = 'info') {
         <button class="notification-close">&times;</button>
     `;
     
-    // Добавяне стилове
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -177,13 +167,11 @@ function showNotification(message, type = 'info') {
     
     document.body.appendChild(notification);
     
-    // Затваряне при клик
     notification.querySelector('.notification-close').addEventListener('click', () => {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
     });
     
-    // Автоматично затваряне след 5 секунди
     setTimeout(() => {
         if (notification.parentNode) {
             notification.style.animation = 'slideOut 0.3s ease';
@@ -192,7 +180,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// === EXPORTS ===
 export {
     formatDate,
     formatDateTime,

@@ -8,29 +8,26 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header>
             <div class="header-info">
-                <h1 id="presentationTitle">🗺️ Карта на презентацията</h1>
+                <h1 id="presentationTitle">Карта на презентацията</h1>
                 <p id="presentationSubtitle">Визуализация на структурата</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-primary" id="viewBtn">👁️ Преглед</button>
-                <button class="btn btn-secondary" id="backBtn">← Назад</button>
+                <button class="btn btn-primary" id="viewBtn">Преглед</button>
+                <button class="btn btn-secondary" id="backBtn">Назад</button>
             </div>
         </header>
 
-        <!-- Map Container -->
         <div class="map-container">
             <div class="map-header">
                 <h2>Структура на слайдовете</h2>
                 <div class="view-toggle">
-                    <button class="btn active" id="gridViewBtn">🔲 Grid</button>
-                    <button class="btn" id="flowViewBtn">📊 Flow</button>
+                    <button class="btn active" id="gridViewBtn">Grid</button>
+                    <button class="btn" id="flowViewBtn">Flow</button>
                 </div>
             </div>
 
-            <!-- Statistics -->
             <div class="map-stats">
                 <div class="stat-item">
                     <div class="stat-value" id="totalSlides">0</div>
@@ -46,12 +43,8 @@
                 </div>
             </div>
 
-            <!-- Map Views -->
-            <div id="mapContent">
-                <!-- Content will be injected here -->
-            </div>
+            <div id="mapContent"></div>
 
-            <!-- Legend -->
             <div class="legend">
                 <h3>Легенда - Типове слайдове</h3>
                 <div class="legend-items">
@@ -76,6 +69,13 @@
         </div>
     </div>
 
+    <script src="api-service.js"></script>
     <script src="map.js"></script>
+    
+    <script>
+        // Quick fix: Update map.js init function to use apiService
+        // Вместо demo data, използвай:
+        // currentPresentation = await apiService.getFullPresentation(presentationId);
+    </script>
 </body>
 </html>

@@ -5,13 +5,10 @@ class FileManager {
         this.isDirty = false;
         this.storageKey = 'slim_presentations';
         this.loadFromStorage();
-        
-        // Създаваме скрит file input за импорт
         this.createFileInput();
     }
 
     createFileInput() {
-        // Премахваме стар input ако има
         const oldInput = document.getElementById('file-import-input');
         if (oldInput) {
             oldInput.remove();
@@ -25,27 +22,25 @@ class FileManager {
         input.multiple = false;
         document.body.appendChild(input);
         
-        console.log('✅ File input създаден');
+        console.log('File input създаден');
         
         input.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) {
-                console.log('❌ Няма избран файл');
+                console.log('Няма избран файл');
                 return;
             }
             
-            console.log(`📂 Избран файл: ${file.name} (${(file.size/1024).toFixed(2)} KB)`);
+            console.log(`Избран файл: ${file.name} (${(file.size/1024).toFixed(2)} KB)`);
             
             try {
                 const presentation = await this.import(file);
-                console.log('✅ Файлът е импортиран успешно!');
+                console.log('Файлът е импортиран успешно!');
                 
-                // Съобщение за успех
                 if (window.updateStatus) {
-                    window.updateStatus(`✅ Импортирано: ${presentation.title}`);
+                    window.updateStatus(`Импортирано: ${presentation.title}`);
                 }
                 
-                // Презареждаме файловия списък и редактора
                 if (window.refreshFileList) {
                     window.refreshFileList();
                 }
@@ -53,38 +48,33 @@ class FileManager {
                     window.loadPresentationInEditor(presentation);
                 }
                 
-                alert(`✅ Успешно импортиран файл!\n\n📄 Име: ${presentation.title}\n📊 Слайдове: ${presentation.slideCount}\n💾 Запазен в браузъра`);
+                alert(`Успешно импортиран файл!\n\n Име: ${presentation.title}\n Слайдове: ${presentation.slideCount}\n Запазен в браузъра`);
                 
             } catch (error) {
-                console.error('❌ Грешка при импорт:', error);
-                alert(`❌ Грешка при импорт на файл:\n\n${error.message}\n\nПроверете дали файлът е валиден .pptx, .slim или .txt формат.`);
+                console.error('Грешка при импорт:', error);
+                alert(` Грешка при импорт на файл:\n\n${error.message}\n\nПроверете дали файлът е валиден .pptx, .slim или .txt формат.`);
             }
             
-            // Изчистваме input за следващ импорт
             input.value = '';
         });
         
-        console.log('✅ File input event listener добавен');
+        console.log('File input event listener добавен');
     }
 
-    /**
-     * Показва file picker за импорт
-     */
     showImportDialog() {
-        console.log('🔍 Търсене на file input...');
+        console.log('Търсене на file input...');
         const input = document.getElementById('file-import-input');
         
         if (!input) {
-            console.error('❌ File input не съществува! Създаваме нов...');
+            console.error('File input не съществува! Създаваме нов...');
             this.createFileInput();
-            // Опитваме отново след кратка пауза
             setTimeout(() => this.showImportDialog(), 100);
             return;
         }
         
-        console.log('✅ File input намерен, отваряме dialog...');
+        console.log('File input намерен, отваряме dialog...');
         input.click();
-        console.log('📂 File picker dialog отворен');
+        console.log('File picker dialog отворен');
     }
 
     loadFromStorage() {
@@ -92,14 +82,14 @@ class FileManager {
             const stored = localStorage.getItem(this.storageKey);
             if (stored) {
                 this.presentations = JSON.parse(stored);
-                console.log(`✅ Заредени ${this.presentations.length} презентации`);
+                console.log(`Заредени ${this.presentations.length} презентации`);
             } else {
                 this.presentations = this.getDefaultPresentations();
                 this.saveToStorage();
-                console.log('✅ Създадени примерни презентации');
+                console.log('Създадени примерни презентации');
             }
         } catch (e) {
-            console.error('❌ Грешка при зареждане:', e);
+            console.error('Грешка при зареждане:', e);
             this.presentations = this.getDefaultPresentations();
         }
     }
@@ -110,9 +100,9 @@ class FileManager {
             localStorage.setItem(this.storageKey, json);
             return true;
         } catch (e) {
-            console.error('❌ Грешка при запазване:', e);
+            console.error('Грешка при запазване:', e);
             if (e.name === 'QuotaExceededError') {
-                alert('⚠️ Недостатъчна памет в браузъра!');
+                alert('Недостатъчна памет в браузъра!');
             }
             return false;
         }
@@ -122,7 +112,7 @@ class FileManager {
         localStorage.removeItem(this.storageKey);
         this.presentations = [];
         this.currentFile = null;
-        console.log('🗑️ Storage изчистен');
+        console.log('Storage изчистен');
     }
 
     createNew(title, type = 'lecture') {
@@ -144,7 +134,7 @@ class FileManager {
         this.isDirty = false;
         this.saveToStorage();
 
-        console.log(`✅ Създадена: ${title}`);
+        console.log(`Създадена: ${title}`);
         return newPresentation;
     }
 
@@ -153,10 +143,10 @@ class FileManager {
         if (presentation) {
             this.currentFile = presentation;
             this.isDirty = false;
-            console.log(`✅ Заредена: ${presentation.title}`);
+            console.log(`Заредена: ${presentation.title}`);
             return presentation;
         }
-        console.error(`❌ Презентация "${id}" не съществува`);
+        console.error(`Презентация "${id}" не съществува`);
         return null;
     }
 
@@ -174,7 +164,7 @@ class FileManager {
         this.isDirty = false;
 
         this.saveToStorage();
-        console.log(`💾 Запазена: ${this.currentFile.title}`);
+        console.log(`Запазена: ${this.currentFile.title}`);
         return this.currentFile;
     }
 
@@ -189,7 +179,7 @@ class FileManager {
                 this.currentFile = null;
             }
             
-            console.log(`🗑️ Изтрита: ${deleted.title}`);
+            console.log(`Изтрита: ${deleted.title}`);
             return true;
         }
         return false;
@@ -205,7 +195,7 @@ class FileManager {
         newPres.slideCount = original.slideCount;
         this.save(newPres.content, newTitle);
         
-        console.log(`📋 Дублирана: ${original.title}`);
+        console.log(`Дублирана: ${original.title}`);
         return newPres;
     }
 
@@ -242,13 +232,10 @@ class FileManager {
         );
     }
 
-    /**
-     * ГЛАВНА ФУНКЦИЯ ЗА ИМПОРТ
-     */
     import(file) {
         const fileExtension = file.name.split('.').pop().toLowerCase();
         
-        console.log(`📥 Импортиране: ${file.name} (${fileExtension})`);
+        console.log(`Импортиране: ${file.name} (${fileExtension})`);
         
         if (fileExtension === 'pptx') {
             return this.importPPTX(file);
@@ -256,7 +243,7 @@ class FileManager {
             return this.importText(file);
         } else {
             return Promise.reject(
-                new Error('❌ Неподдържан формат! Поддържат се: .pptx, .slim, .txt')
+                new Error('Неподдържан формат! Поддържат се: .pptx, .slim, .txt')
             );
         }
     }
@@ -275,7 +262,7 @@ class FileManager {
                     presentation.slideCount = this.countSlides(content);
                     this.save(content, title);
                     
-                    console.log(`✅ Импортиран текст: ${title}`);
+                    console.log(`Импортиран текст: ${title}`);
                     resolve(presentation);
                 } catch (error) {
                     reject(new Error('Грешка при обработка: ' + error.message));
@@ -287,14 +274,10 @@ class FileManager {
         });
     }
 
-    /**
-     * ИМПОРТ НА POWERPOINT (.pptx)
-     */
     importPPTX(file) {
         return new Promise((resolve, reject) => {
-            // Проверка за JSZip
             if (typeof JSZip === 'undefined') {
-                reject(new Error('❌ JSZip не е заредена! Проверете дали има:\n<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>'));
+                reject(new Error('JSZip не е заредена! Проверете дали има:\n<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>'));
                 return;
             }
 
@@ -302,28 +285,25 @@ class FileManager {
             
             reader.onload = async (e) => {
                 try {
-                    console.log('📦 Парсване на PPTX...');
+                    console.log('Парсване на PPTX...');
                     const arrayBuffer = e.target.result;
                     
-                    // PPTX е ZIP архив
                     const zip = await JSZip.loadAsync(arrayBuffer);
-                    console.log('✅ ZIP разархивиран');
+                    console.log('ZIP разархивиран');
                     
-                    // Конвертиране към Slim
                     const slimContent = await this.parsePPTXToSlim(zip);
                     
-                    // Създаване на презентация
                     const title = file.name.replace(/\.pptx$/i, '');
                     const presentation = this.createNew(title, 'lecture');
                     presentation.content = slimContent;
                     presentation.slideCount = this.countSlides(slimContent);
                     this.save(slimContent, title);
                     
-                    console.log(`✅ PPTX импортиран: ${title}`);
+                    console.log(`PPTX импортиран: ${title}`);
                     resolve(presentation);
                     
                 } catch (error) {
-                    console.error('❌ Грешка при PPTX парсване:', error);
+                    console.error('Грешка при PPTX парсване:', error);
                     reject(new Error('Грешка при PPTX: ' + error.message));
                 }
             };
@@ -333,9 +313,6 @@ class FileManager {
         });
     }
 
-    /**
-     * ПАРСВАНЕ НА PPTX → SLIM
-     */
     async parsePPTXToSlim(zip) {
         let slimContent = '';
         
@@ -362,9 +339,8 @@ class FileManager {
             }
             
             slideFiles.sort((a, b) => a.number - b.number);
-            console.log(`📄 Намерени ${slideFiles.length} слайда`);
+            console.log(`Намерени ${slideFiles.length} слайда`);
             
-            // Парсване на всеки слайд
             for (let i = 0; i < slideFiles.length; i++) {
                 const slideXML = await slideFiles[i].file.async('text');
                 const slideContent = this.parseSlideXML(slideXML, i);
@@ -375,27 +351,23 @@ class FileManager {
                 slimContent += slideContent;
             }
             
-            console.log(`✅ Парсирани ${slideFiles.length} слайда`);
+            console.log(`Парсирани ${slideFiles.length} слайда`);
             return slimContent;
             
         } catch (error) {
-            console.error('❌ Грешка при парсване:', error);
+            console.error('Грешка при парсване:', error);
             
-            // Fallback шаблон
             return `#title Импортирана PowerPoint презентация
 #type title
 #data subtitle=Конвертирана от PPTX;author=Import
 
 #slide
-#title ⚠️ Забележка за импорта
+#title Забележка за импорта
 #type text-only
 #data content=Презентацията беше частично импортирана. Възникна грешка: ${error.message}. Моля, редактирайте ръчно.`;
         }
     }
 
-    /**
-     * ПАРСВАНЕ НА СЛАЙД ОТ XML
-     */
     parseSlideXML(xml, slideIndex) {
         try {
             const parser = new DOMParser();
@@ -406,7 +378,6 @@ class FileManager {
                 throw new Error('Невалиден XML');
             }
             
-            // Извличане на текст
             const textElements = xmlDoc.getElementsByTagName('a:t');
             const texts = [];
             
@@ -426,12 +397,10 @@ class FileManager {
             const title = texts[0];
             const restTexts = texts.slice(1);
             
-            // Определяне на тип
             let slideType = 'text-only';
             let dataStr = '';
             
             if (slideIndex === 0 && texts.length <= 3) {
-                // Заглавен слайд
                 slideType = 'title';
                 const subtitle = restTexts[0] || '';
                 const author = restTexts[1] || 'Импортирано от PPTX';
@@ -442,7 +411,6 @@ class FileManager {
                 dataStr = `content=Само заглавие`;
                 
             } else if (restTexts.length >= 4) {
-                // Списък
                 slideType = 'list';
                 const items = restTexts
                     .map(t => this.escapeSlimData(t))
@@ -450,7 +418,6 @@ class FileManager {
                 dataStr = `items=${items}`;
                 
             } else {
-                // Текст
                 slideType = 'text-only';
                 const content = restTexts.join(' ');
                 dataStr = `content=${this.escapeSlimData(content)}`;
@@ -461,16 +428,13 @@ class FileManager {
 #data ${dataStr}`;
             
         } catch (error) {
-            console.error(`❌ Грешка при слайд ${slideIndex}:`, error);
+            console.error(`Грешка при слайд ${slideIndex}:`, error);
             return `#title Слайд ${slideIndex + 1}
 #type text-only
 #data content=Грешка при импорт`;
         }
     }
 
-    /**
-     * ESCAPE за Slim формат
-     */
     escapeSlimData(text) {
         if (!text) return '';
         
@@ -483,13 +447,10 @@ class FileManager {
             .trim();
     }
 
-    /**
-     * ЕКСПОРТ
-     */
     export(id, format = 'slim') {
         const presentation = this.presentations.find(p => p.id === id);
         if (!presentation) {
-            console.error('❌ Презентация не е намерена');
+            console.error('Презентация не е намерена');
             return null;
         }
 
@@ -508,7 +469,7 @@ class FileManager {
         
         setTimeout(() => URL.revokeObjectURL(url), 100);
         
-        console.log(`📥 Експортирана: ${filename}`);
+        console.log(`Експортирана: ${filename}`);
         return { filename, content, size: content.length };
     }
 

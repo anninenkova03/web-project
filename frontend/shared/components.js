@@ -1,4 +1,3 @@
-// === MODAL COMPONENT ===
 class Modal {
     constructor(options = {}) {
         this.options = {
@@ -68,7 +67,6 @@ class Modal {
     }
 }
 
-// === TOOLTIP COMPONENT ===
 class Tooltip {
     constructor(element, text) {
         this.element = element;
@@ -115,5 +113,4 @@ class Tooltip {
     }
 }
 
-// === EXPORTS ===
 export { Modal, Tooltip };

@@ -1,74 +1,62 @@
-/* === CSS VARIABLES (Design Tokens) === */
 :root {
-    /* Colors - Primary */
     --color-primary: #1e3c72;
     --color-primary-light: #2a5298;
     --color-primary-dark: #0d1b3e;
     
-    /* Colors - Secondary */
     --color-secondary: #4CAF50;
     --color-secondary-light: #66BB6A;
     --color-secondary-dark: #388E3C;
     
-    /* Colors - Neutral */
     --color-white: #ffffff;
     --color-light: #f5f7fa;
     --color-gray: #718096;
     --color-dark: #2d3748;
     --color-black: #1a202c;
     
-    /* Colors - Semantic */
     --color-success: #48BB78;
     --color-warning: #ED8936;
     --color-danger: #F56565;
     --color-info: #4299E1;
     
-    /* Colors - Slide Types */
     --color-slide-title: #1976d2;
     --color-slide-content: #7b1fa2;
     --color-slide-code: #388e3c;
     --color-slide-image: #f57c00;
     --color-slide-quiz: #E91E63;
     
-    /* Typography */
     --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    --font-size-xs: 0.75rem;    /* 12px */
-    --font-size-sm: 0.875rem;   /* 14px */
-    --font-size-base: 1rem;     /* 16px */
-    --font-size-lg: 1.125rem;   /* 18px */
-    --font-size-xl: 1.25rem;    /* 20px */
-    --font-size-2xl: 1.5rem;    /* 24px */
-    --font-size-3xl: 1.875rem;  /* 30px */
-    --font-size-4xl: 2.25rem;   /* 36px */
+    --font-size-xs: 0.75rem;  
+    --font-size-sm: 0.875rem; 
+    --font-size-base: 1rem;   
+    --font-size-lg: 1.125rem; 
+    --font-size-xl: 1.25rem;  
+    --font-size-2xl: 1.5rem;  
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem; 
     
-    /* Spacing */
-    --spacing-xs: 0.25rem;  /* 4px */
-    --spacing-sm: 0.5rem;   /* 8px */
-    --spacing-md: 1rem;     /* 16px */
-    --spacing-lg: 1.5rem;   /* 24px */
-    --spacing-xl: 2rem;     /* 32px */
-    --spacing-2xl: 3rem;    /* 48px */
+    --spacing-xs: 0.25rem;  
+    --spacing-sm: 0.5rem;   
+    --spacing-md: 1rem;     
+    --spacing-lg: 1.5rem;   
+    --spacing-xl: 2rem;     
+    --spacing-2xl: 3rem;    
     
-    /* Borders */
-    --border-radius-sm: 0.25rem;    /* 4px */
-    --border-radius-md: 0.5rem;     /* 8px */
-    --border-radius-lg: 0.75rem;    /* 12px */
-    --border-radius-xl: 1rem;       /* 16px */
+    --border-radius-sm: 0.25rem;    
+    --border-radius-md: 0.5rem;     
+    --border-radius-lg: 0.75rem;    
+    --border-radius-xl: 1rem;       
     --border-radius-round: 9999px;
     
-    /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     
-    /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 300ms ease;
     --transition-slow: 500ms ease;
 }
 
-/* === BASE RESETS === */
 * {
     margin: 0;
     padding: 0;
@@ -81,7 +69,6 @@ body {
     color: var(--color-dark);
 }
 
-/* === TYPOGRAPHY === */
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.2;
@@ -99,7 +86,6 @@ p {
     margin-bottom: var(--spacing-md);
 }
 
-/* === BUTTONS (Shared across all apps) === */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -164,7 +150,6 @@ p {
     gap: var(--spacing-sm);
 }
 
-/* === FORMS (Shared across all apps) === */
 .input-group {
     margin-bottom: var(--spacing-lg);
 }
@@ -192,7 +177,6 @@ p {
     box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
 }
 
-/* === CARDS (Shared across all apps) === */
 .card {
     background: var(--color-white);
     border-radius: var(--border-radius-lg);
@@ -218,7 +202,6 @@ p {
     margin-bottom: var(--spacing-xs);
 }
 
-/* === UTILITY CLASSES === */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -248,7 +231,6 @@ p {
 .hidden { display: none; }
 .visible { display: block; }
 
-/* === LOADING STATES === */
 .loading-spinner {
     display: inline-block;
     width: 50px;
@@ -270,7 +252,6 @@ p {
     padding: var(--spacing-xl);
 }
 
-/* === EMPTY STATES === */
 .empty-state {
     text-align: center;
     padding: var(--spacing-2xl);

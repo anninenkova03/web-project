@@ -1,7 +1,5 @@
-// === API CONFIGURATION ===
 const API_BASE_URL = '../backend/public/index.php';
 
-// === API FUNCTIONS ===
 async function fetchPresentations() {
     try {
         const response = await fetch(`${API_BASE_URL}?action=getPresentations`);
@@ -35,17 +33,14 @@ async function fetchSlideMap(id) {
     }
 }
 
-// === ERROR HANDLING ===
 function showError(message) {
     console.error('API Error:', message);
-    // Може да добавиш UI за грешки тук
     return {
         error: true,
         message: message
     };
 }
 
-// === CACHE MANAGEMENT ===
 const cache = new Map();
 
 function getFromCache(key) {
@@ -63,7 +58,6 @@ function clearCache() {
     cache.clear();
 }
 
-// === EXPORTS ===
 export {
     API_BASE_URL,
     fetchPresentations,

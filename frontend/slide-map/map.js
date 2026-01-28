@@ -1,4 +1,3 @@
-// === DEMO DATA ===
 const DEMO_PRESENTATION = {
     id: 1,
     title: "Въведение в Web Technologies",
@@ -46,17 +45,13 @@ const DEMO_PRESENTATION = {
     ]
 };
 
-// === STATE ===
 let currentPresentation = null;
 let currentView = 'grid';
 
-// === DOM ELEMENTS ===
 let presentationTitle, presentationSubtitle, totalSlides, slideTypes, duration;
 let mapContent, gridViewBtn, flowViewBtn, viewBtn, backBtn;
 
-// === INITIALIZATION ===
 async function init() {
-    // Initialize DOM elements
     presentationTitle = document.getElementById('presentationTitle');
     presentationSubtitle = document.getElementById('presentationSubtitle');
     totalSlides = document.getElementById('totalSlides');
@@ -68,13 +63,8 @@ async function init() {
     viewBtn = document.getElementById('viewBtn');
     backBtn = document.getElementById('backBtn');
 
-    // Get presentation ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = urlParams.get('id');
-
-    // TODO: Load from API
-    // const response = await fetch(`../backend/public/index.php?action=getPresentation&id=${presentationId}`);
-    // currentPresentation = await response.json();
 
     currentPresentation = DEMO_PRESENTATION;
 
@@ -84,27 +74,22 @@ async function init() {
     setupEventListeners();
 }
 
-// === UPDATE HEADER ===
 function updateHeader() {
     presentationTitle.textContent = `🗺️ ${currentPresentation.title}`;
     presentationSubtitle.textContent = `Визуализация на ${currentPresentation.slides.length} слайда`;
 }
 
-// === UPDATE STATISTICS ===
 function updateStats() {
     const slides = currentPresentation.slides;
     totalSlides.textContent = slides.length;
 
-    // Count unique slide types
     const types = new Set(slides.map(s => s.type));
     slideTypes.textContent = types.size;
 
-    // Estimate duration (2 minutes per slide)
     const estimatedMinutes = slides.length * 2;
     duration.textContent = `${estimatedMinutes} мин`;
 }
 
-// === RENDER MAP ===
 function renderMap() {
     if (currentView === 'grid') {
         renderGridView();
@@ -113,7 +98,6 @@ function renderMap() {
     }
 }
 
-// === RENDER GRID VIEW ===
 function renderGridView() {
     const slides = currentPresentation.slides;
     
@@ -135,7 +119,6 @@ function renderGridView() {
         </div>
     `;
 
-    // Add click listeners
     document.querySelectorAll('.slide-node').forEach(node => {
         node.addEventListener('click', () => {
             const slideId = node.dataset.slideId;
@@ -144,7 +127,6 @@ function renderGridView() {
     });
 }
 
-// === RENDER FLOW VIEW ===
 function renderFlowView() {
     const slides = currentPresentation.slides;
     
@@ -163,7 +145,6 @@ function renderFlowView() {
         </div>
     `;
 
-    // Add click listeners
     document.querySelectorAll('.flow-item').forEach(item => {
         item.addEventListener('click', () => {
             const slideId = item.dataset.slideId;
@@ -172,7 +153,6 @@ function renderFlowView() {
     });
 }
 
-// === HELPER FUNCTIONS ===
 function getTypeLabel(type) {
     const labels = {
         'title': '📌 Title',
@@ -184,13 +164,9 @@ function getTypeLabel(type) {
 }
 
 function goToSlide(slideId) {
-    // TODO: Navigate to viewer at specific slide
     alert(`Отваряне на слайд ${slideId} в Viewer`);
-    // const slideIndex = currentPresentation.slides.findIndex(s => s.id == slideId);
-    // window.location.href = `viewer.html?id=${currentPresentation.id}&slide=${slideIndex}`;
 }
 
-// === EVENT LISTENERS ===
 function setupEventListeners() {
     gridViewBtn.addEventListener('click', () => {
         currentView = 'grid';
@@ -207,17 +183,12 @@ function setupEventListeners() {
     });
 
     viewBtn.addEventListener('click', () => {
-        // TODO: Navigate to viewer
         alert(`Отваряне на презентация ${currentPresentation.id} в Viewer`);
-        // window.location.href = `viewer.html?id=${currentPresentation.id}`;
     });
 
     backBtn.addEventListener('click', () => {
-        // TODO: Navigate back to dashboard
         alert('Връщане към Dashboard');
-        // window.location.href = 'dashboard.html';
     });
 }
 
-// === START ===
 document.addEventListener('DOMContentLoaded', init);
