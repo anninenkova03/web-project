@@ -85,7 +85,7 @@ function renderCardView(p) {
                 <span class="card-type">${getTypeLabel(p.type)}</span>
             </div>
             <div class="card-meta">
-                <span>${p.slides || (p.slidesData ? p.slidesData.length : 0)} слайда</span>
+                <span>${getSlidesCount(p)} слайда</span>
                 <span>${formatDate(p.date)}</span>
             </div>
             <div class="card-meta">
@@ -113,7 +113,7 @@ function renderListView(p) {
                 <h3 class="card-title">${p.title}</h3>
                 <div class="card-meta">
                     <span class="card-type">${getTypeLabel(p.type)}</span>
-                    <span>${p.slides || (p.slidesData ? p.slidesData.length : 0)} слайда</span>
+                    <span>${getSlidesCount(p)} слайда</span>
                     <span>${formatDate(p.date)}</span>
                     <span>${p.author}</span>
                 </div>
@@ -163,6 +163,16 @@ function editPresentation(id) {
 
 function openEditor() {
     window.location.href = `../editor/editor.html`;
+}
+
+function getSlidesCount(presentation) {
+    if (presentation.slides && Array.isArray(presentation.slides)) {
+        return presentation.slides.length;
+    }
+    if (presentation.slidesData && Array.isArray(presentation.slidesData)) {
+        return presentation.slidesData.length;
+    }
+    return 0;
 }
 
 function setupEventListeners() {
