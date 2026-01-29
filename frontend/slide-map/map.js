@@ -1,49 +1,4 @@
-const DEMO_PRESENTATION = {
-    id: 1,
-    title: "Въведение в Web Technologies",
-    slides: [
-        {
-            id: 1,
-            order: 1,
-            type: "title",
-            title: "Въведение в Web Technologies",
-            next: 2,
-            previous: null
-        },
-        {
-            id: 2,
-            order: 2,
-            type: "content",
-            title: "Какво ще научим?",
-            next: 3,
-            previous: 1
-        },
-        {
-            id: 3,
-            order: 3,
-            type: "content",
-            title: "Трислойна архитектура",
-            next: 4,
-            previous: 2
-        },
-        {
-            id: 4,
-            order: 4,
-            type: "code",
-            title: "Пример: HTML структура",
-            next: 5,
-            previous: 3
-        },
-        {
-            id: 5,
-            order: 5,
-            type: "content",
-            title: "Заключение",
-            next: null,
-            previous: 4
-        }
-    ]
-};
+import { PRESENTATIONS } from '../data.js';
 
 let currentPresentation = null;
 let currentView = 'grid';
@@ -64,9 +19,14 @@ async function init() {
     backBtn = document.getElementById('backBtn');
 
     const urlParams = new URLSearchParams(window.location.search);
-    const presentationId = urlParams.get('id');
+    const presentationId = Number(urlParams.get('id'));
 
-    currentPresentation = DEMO_PRESENTATION;
+    currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    if (!currentPresentation) {
+        alert('Презентацията не е намерена');
+        window.location.href = 'dashboard.html';
+        return;
+    }
 
     updateHeader();
     updateStats();
@@ -75,7 +35,7 @@ async function init() {
 }
 
 function updateHeader() {
-    presentationTitle.textContent = `🗺️ ${currentPresentation.title}`;
+    presentationTitle.textContent = `${currentPresentation.title}`;
     presentationSubtitle.textContent = `Визуализация на ${currentPresentation.slides.length} слайда`;
 }
 
@@ -164,7 +124,7 @@ function getTypeLabel(type) {
 }
 
 function goToSlide(slideId) {
-    alert(`Отваряне на слайд ${slideId} в Viewer`);
+    window.location.href = `../viewer/viewer.html?id=${currentPresentation.id}&slide=${slideId}`;
 }
 
 function setupEventListeners() {
@@ -183,11 +143,11 @@ function setupEventListeners() {
     });
 
     viewBtn.addEventListener('click', () => {
-        alert(`Отваряне на презентация ${currentPresentation.id} в Viewer`);
+        window.location.href = `../viewer/viewer.html?id=${currentPresentation.id}`;
     });
 
     backBtn.addEventListener('click', () => {
-        alert('Връщане към Dashboard');
+        window.location.href = `../dashboard/dashboard.html`;
     });
 }
 

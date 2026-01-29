@@ -299,9 +299,10 @@ header {
 }
 
 .legend {
-    background: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
+    border-style: inset;
+    border-color: rgba(0, 0, 0, 0.15);
     margin-top: 30px;
 }
 
@@ -320,12 +321,15 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
+    color: #333;
 }
 
 .legend-color {
     width: 30px;
     height: 30px;
     border-radius: 6px;
+    border-style: inset;
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {

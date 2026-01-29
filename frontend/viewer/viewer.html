@@ -13,7 +13,7 @@
             <div class="header-controls">
                 <div class="slide-counter" id="slideCounter">1 / 1</div>
                 <button class="btn-icon fullscreen-btn" id="fullscreenBtn">⛶ Fullscreen</button>
-                <button class="btn-icon" id="mapBtn">🗺️ Карта</button>
+                <button class="btn-icon" id="mapBtn">Карта</button>
                 <button class="btn-icon btn-back" id="backBtn">← Назад</button>
             </div>
         </div>
@@ -23,11 +23,17 @@
         </div>
 
         <div class="navigation">
-            <button class="nav-button" id="prevBtn" disabled>← Предишен</button>
+            <button class="nav-button" id="prevBtn" disabled>
+                ← Предишен
+            </button>
+            
             <div class="progress-bar-container">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
-            <button class="nav-button" id="nextBtn">Следващ →</button>
+            
+            <button class="nav-button" id="nextBtn">
+                Следващ →
+            </button>
         </div>
     </div>
 
@@ -38,7 +44,6 @@
         <p>Esc : Изход</p>
     </div>
 
-    <script src="api-service.js"></script>
-    <script src="viewer-integrated.js"></script>
+    <script type="module" src="viewer.js"></script>
 </body>
 </html>

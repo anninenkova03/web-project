@@ -292,11 +292,11 @@ class SlimValidator {
 
     getSummary() {
         if (this.errors.length === 0 && this.warnings.length === 0) {
-            return `✓ Валидна презентация с ${this.slides.length} слайда`;
+            return `Валидна презентация с ${this.slides.length} слайда`;
         } else if (this.errors.length === 0) {
-            return `✓ Валидна с ${this.warnings.length} предупреждения`;
+            return `Валидна с ${this.warnings.length} предупреждения`;
         } else {
-            return `✗ ${this.errors.length} грешки, ${this.warnings.length} предупреждения`;
+            return `${this.errors.length} грешки, ${this.warnings.length} предупреждения`;
         }
     }
 

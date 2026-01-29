@@ -2,7 +2,7 @@
   "lecture": {
     "name": "Лекция",
     "description": "Шаблон за академична лекция",
-    "template": "#title Заглавие на лекцията\n#type title\n#data subtitle=Подзаглавие;author=Име на преподавател\n\n#slide\n#title Въведение\n#type text-only\n#data content=Въведение в темата...\n\n#slide\n#title Основни понятия\n#type list\n#data items=Понятие 1;Понятие 2;Понятие 3"
+    "template": "#title Заглавие на лекцията\n#type title\n#data subtitle=Подзаглавие;author=Име на преподавател\n\n#slide\n#title Въведение\n#type text-only\n#data content=Въведение в темата...\n\n#slide\n#title Основни понятия\n#type list\n#data items=Понятие 1,Понятие 2,Понятие 3"
   },
   "tutorial": {
     "name": "Упражнение",
@@ -12,7 +12,7 @@
   "project": {
     "name": "Проект",
     "description": "Шаблон за курсов проект",
-    "template": "#title Име на проект\n#type title\n#data subtitle=Курсов проект;author=Екип\n\n#slide\n#title Цели\n#type text-only\n#data content=Описание на целите на проекта...\n\n#slide\n#title Технологии\n#type list\n#data items=HTML;CSS;JavaScript;PHP"
+    "template": "#title Име на проект\n#type title\n#data subtitle=Курсов проект;author=Екип\n\n#slide\n#title Цели\n#type text-only\n#data content=Описание на целите на проекта...\n\n#slide\n#title Технологии\n#type list\n#data items=HTML,CSS,JavaScript,PHP"
   },
   "demo": {
     "name": "Демонстрация",

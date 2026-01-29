@@ -232,7 +232,7 @@ class APIService {
 
     clearCache() {
         this.cache.clear();
-        console.log('🗑️ Cache cleared');
+        console.log('Cache cleared');
     }
 
     async healthCheck() {
@@ -240,7 +240,7 @@ class APIService {
             const response = await fetch(this.baseURL);
             return response.ok;
         } catch (error) {
-            console.error('❌ Backend not available:', error);
+            console.error('Backend not available:', error);
             return false;
         }
     }
