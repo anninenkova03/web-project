@@ -13,7 +13,8 @@
             <div class="header-controls">
                 <div class="slide-counter" id="slideCounter">1 / 1</div>
                 <button class="btn-icon fullscreen-btn" id="fullscreenBtn">⛶ Fullscreen</button>
-                <button class="btn-icon" id="mapBtn">Карта</button>
+                <button class="btn-icon" id="editBtn">✏️ Редактирай</button>
+                <button class="btn-icon" id="mapBtn">🗺️ Карта</button>
                 <button class="btn-icon btn-back" id="backBtn">← Назад</button>
             </div>
         </div>
@@ -38,12 +39,14 @@
     </div>
 
     <div class="shortcuts-info" id="shortcutsInfo">
-        <p><strong>Клавишни комбинации:</strong></p>
+        <p><strong>⌨️ Клавишни комбинации:</strong></p>
         <p>← / → : Навигация</p>
         <p>F : Fullscreen</p>
+        <p>Ctrl+E : Редактирай</p>
         <p>Esc : Изход</p>
     </div>
 
+    <script type="module" src="../presentationBridge.js"></script>
     <script type="module" src="viewer.js"></script>
 </body>
 </html>

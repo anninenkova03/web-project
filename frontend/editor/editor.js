@@ -56,6 +56,13 @@ function setupEventListeners() {
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     document.getElementById('btn-refresh').addEventListener('click', loadFileList);
     
+    const dashboardBtn = document.getElementById('btn-dashboard');
+    if (dashboardBtn) {
+        dashboardBtn.addEventListener('click', () => {
+            window.location.href = '../dashboard/dashboard.html';
+        });
+    }
+    
     const editor = document.getElementById('slim-editor');
     editor.addEventListener('input', handleEditorChange);
     editor.addEventListener('keyup', updateCursorPosition);
@@ -286,63 +293,45 @@ function showContextMenu(e, presentationId) {
         position: fixed;
         left: ${e.clientX}px;
         top: ${e.clientY}px;
-        background: #7c86f0ff;
-        border: 2px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow-xl);
-        padding: 8px;
         z-index: 10000;
-        min-width: 200px;
-        animation: fadeIn 0.15s ease;
     `;
     
     menu.innerHTML = `
-        <style>
-            #context-menu .menu-item {
-                padding: 12px 16px;
-                cursor: pointer;
-                border-radius: 8px;
-                transition: all 0.2s;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 0.95rem;
-                font-weight: 500;
-                color: var(--text-primary);
-            }
-            #context-menu .menu-item:hover {
-                background: var(--bg-tertiary);
-                transform: translateX(4px);
-            }
-            #context-menu .menu-item.danger {
-                color: var(--danger);
-            }
-            #context-menu .menu-item.danger:hover {
-                background: var(--danger);
-                color: white;
-            }
-            #context-menu hr {
-                margin: 6px 0;
-                border: none;
-                border-top: 2px solid var(--border);
-            }
-        </style>
-        <div class="menu-item" onclick="loadPresentation('${presentation.id}'); closeContextMenu();">
-            <span style="font-size: 1.2rem;">📂</span> Отвори
+        <div class="context-menu-header">
+            <span>${escapeHtml(presentation.title)}</span>
         </div>
-        <div class="menu-item" onclick="exportPresentation('${presentation.id}'); closeContextMenu();">
-            <span style="font-size: 1.2rem;">💾</span> Експортирай
-        </div>
-        <div class="menu-item" onclick="duplicatePresentation('${presentation.id}'); closeContextMenu();">
-            <span style="font-size: 1.2rem;">📋</span> Дублирай
-        </div>
-        <hr>
-        <div class="menu-item danger" onclick="deletePresentation('${presentation.id}'); closeContextMenu();">
-            <span style="font-size: 1.2rem;">🗑️</span> Изтрий
+        <div class="context-menu-items">
+            <div class="menu-item" onclick="loadPresentation('${presentation.id}'); closeContextMenu();">
+                <span>📂</span> Отвори
+            </div>
+            <div class="menu-item" onclick="exportPresentation('${presentation.id}'); closeContextMenu();">
+                <span>💾</span> Експортирай
+            </div>
+            <div class="menu-item" onclick="duplicatePresentation('${presentation.id}'); closeContextMenu();">
+                <span>📋</span> Дублирай
+            </div>
+            <hr>
+            <div class="menu-item" onclick="viewInDashboard('${presentation.id}'); closeContextMenu();">
+                <span>👁️</span> Виж в Dashboard
+            </div>
+            <hr>
+            <div class="menu-item danger" onclick="deletePresentation('${presentation.id}'); closeContextMenu();">
+                <span>🗑️</span> Изтрий
+            </div>
         </div>
     `;
     
     document.body.appendChild(menu);
+    
+    setTimeout(() => {
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            menu.style.left = `${window.innerWidth - rect.width - 10}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+            menu.style.top = `${window.innerHeight - rect.height - 10}px`;
+        }
+    }, 0);
     
     setTimeout(() => {
         document.addEventListener('click', closeContextMenu);
@@ -403,13 +392,18 @@ function exportPresentation(id) {
     }
 }
 
+function viewInDashboard(id) {
+    handleSave();
+    window.location.href = `../dashboard/dashboard.html`;
+}
+
 function displayValidationResults(result) {
     const output = document.getElementById('validation-output');
     
     if (result.isValid) {
         output.innerHTML = `
             <div class="validation-message success">
-                <strong>Валидна презентация!</strong>
+                <strong>✓ Валидна презентация!</strong>
                 <p>Няма открити грешки.</p>
             </div>
             <div class="validation-message success">
@@ -566,7 +560,6 @@ function handleKeyboardShortcuts(e) {
     }
 }
 
-
 function startAutoSave() {
     autoSaveInterval = setInterval(() => {
         if (fileManager.hasUnsavedChanges() && fileManager.getCurrentFile()) {
@@ -577,6 +570,21 @@ function startAutoSave() {
 }
 
 function loadLastOrCreateNew() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const loadId = urlParams.get('load');
+    
+    if (loadId) {
+        const presentationId = Number(loadId);
+        const presentations = fileManager.getAll();
+        const toLoad = presentations.find(p => p.id === presentationId);
+        
+        if (toLoad) {
+            loadPresentation(toLoad.id);
+            updateStatus(`📂 Заредена от линк: ${toLoad.title}`);
+            return;
+        }
+    }
+    
     const presentations = fileManager.getAll();
     
     if (presentations.length > 0) {
@@ -625,275 +633,8 @@ window.updateStatus = updateStatus;
 window.deletePresentation = deletePresentation;
 window.duplicatePresentation = duplicatePresentation;
 window.exportPresentation = exportPresentation;
+window.viewInDashboard = viewInDashboard;
 window.showContextMenu = showContextMenu;
 window.closeContextMenu = closeContextMenu;
 
 console.log('Editor script loaded');
-
-async function handleSaveWithBackend() {
-    const editor = document.getElementById('slim-editor');
-    const titleInput = document.getElementById('presentation-title');
-    
-    const content = editor.value;
-    const title = titleInput.value || 'Без име';
-    
-    if (!content.trim()) {
-        alert('⚠️ Няма съдържание за запазване!');
-        return;
-    }
-    
-    fileManager.save(content, title);
-    document.getElementById('file-status').textContent = '✓';
-    document.getElementById('file-status').style.color = 'var(--success)';
-    loadFileList();
-    
-    try {
-        updateStatus('Записване на сървъра...');
-        
-        const isBackendAvailable = await apiService.healthCheck();
-        
-        if (!isBackendAvailable) {
-            updateStatus('Запазено локално (Backend не е достъпен)');
-            showStatus('Презентацията е запазена само локално', 'warning');
-            return;
-        }
-        
-        const result = await apiService.generatePresentation(content);
-        
-        if (result.status === 'ok') {
-            updateStatus(`Запазена локално и на сървъра: ${title}`);
-            showStatus('Презентацията е запазена успешно', 'success');
-            
-            apiService.clearCache();
-        } else {
-            throw new Error('Backend върна грешка');
-        }
-        
-    } catch (error) {
-        console.error('Backend save error:', error);
-        updateStatus('Запазена локално (грешка при сървъра)');
-        showStatus('Локалното запазване успя, но има проблем със сървъра', 'warning');
-    }
-}
-
-async function publishPresentation() {
-    const editor = document.getElementById('slim-editor');
-    const titleInput = document.getElementById('presentation-title');
-    
-    const content = editor.value;
-    const title = titleInput.value || 'Без име';
-    
-    if (!content.trim()) {
-        alert('Няма съдържание за публикуване!');
-        return;
-    }
-    
-    if (validator) {
-        const validationResult = validator.validate(content);
-        if (!validationResult.valid) {
-            const confirm = window.confirm(
-                `Презентацията има ${validationResult.errors.length} грешки!\n\n` +
-                `Сигурни ли сте, че искате да я публикувате?`
-            );
-            if (!confirm) return;
-        }
-    }
-    
-    try {
-        updateStatus('Публикуване на презентацията...');
-        
-        const result = await apiService.generatePresentation(content);
-        
-        if (result.status === 'ok') {
-            updateStatus(`Публикувана: ${title}`);
-            showStatus('Презентацията е публикувана успешно на сървъра', 'success');
-            
-            const openInViewer = window.confirm('Искате ли да отворите презентацията в Viewer?');
-            if (openInViewer) {
-                apiService.clearCache();
-                const presentations = await apiService.getPresentations();
-                const latest = presentations[0];
-                window.open(`viewer.html?id=${latest.id}`, '_blank');
-            }
-        } else {
-            throw new Error('Backend публикуването не успя');
-        }
-        
-    } catch (error) {
-        console.error('Publish error:', error);
-        updateStatus('Грешка при публикуване');
-        showStatus('Презентацията не може да бъде публикувана. Проверете backend-а.', 'error');
-    }
-}
-
-async function loadFromBackend() {
-    try {
-        updateStatus('📥 Зареждане на презентации от сървъра...');
-        
-        const presentations = await apiService.getPresentations();
-        
-        if (!presentations || presentations.length === 0) {
-            alert('Няма презентации на сървъра');
-            return;
-        }
-        
-        showBackendPresentationsDialog(presentations);
-        
-    } catch (error) {
-        console.error('Error loading from backend:', error);
-        alert('Грешка при зареждане от сървъра');
-    }
-}
-
-function showBackendPresentationsDialog(presentations) {
-    const oldDialog = document.getElementById('backend-presentations-dialog');
-    if (oldDialog) oldDialog.remove();
-    
-    const dialog = document.createElement('div');
-    dialog.id = 'backend-presentations-dialog';
-    dialog.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        animation: fadeIn 0.2s ease;
-    `;
-    
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: var(--bg-card);
-        border-radius: var(--radius-lg);
-        padding: 2rem;
-        max-width: 600px;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: var(--shadow-xl);
-    `;
-    
-    content.innerHTML = `
-        <h2 style="margin-bottom: 1rem; color: var(--text-primary);">
-            Импортиране от Backend
-        </h2>
-        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
-            Изберете презентация за импортиране в редактора:
-        </p>
-        <div class="backend-presentations-list">
-            ${presentations.map(p => `
-                <div class="backend-pres-item" 
-                     style="padding: 1rem; margin-bottom: 0.5rem; background: var(--bg-tertiary); 
-                            border-radius: var(--radius); cursor: pointer; transition: all 0.2s;"
-                     onmouseover="this.style.background='var(--primary-light)'"
-                     onmouseout="this.style.background='var(--bg-tertiary)'"
-                     onclick="importBackendPresentation(${p.id}, '${p.slug}')">
-                    <strong style="color: var(--text-primary);">${escapeHtml(p.title)}</strong><br>
-                    <small style="color: var(--text-secondary);">
-                        ${p.slides} слайда • ${p.type} • ${formatDate(p.date)}
-                    </small>
-                </div>
-            `).join('')}
-        </div>
-        <button onclick="closeBackendDialog()" 
-                style="margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: var(--bg-tertiary); 
-                       border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600;">
-            ✕ Затвори
-        </button>
-    `;
-    
-    dialog.appendChild(content);
-    document.body.appendChild(dialog);
-    
-    dialog.addEventListener('click', (e) => {
-        if (e.target === dialog) closeBackendDialog();
-    });
-}
-
-async function importBackendPresentation(id, slug) {
-    try {
-        updateStatus(`Импортиране на презентация ${slug}...`);
-        closeBackendDialog();
-        
-        const html = await apiService.getPresentationHTML(slug);
-        
-        const slimContent = reconstructSlimFromHTML(html);
-        
-        const presentation = fileManager.createNew(`Импортирано: ${slug}`, 'lecture');
-        presentation.content = slimContent;
-        fileManager.save(slimContent, presentation.title);
-        loadPresentationInEditor(presentation);
-        
-        updateStatus(`Импортирана презентация от backend`);
-        showStatus('Презентацията е импортирана успешно', 'success');
-        
-    } catch (error) {
-        console.error('Import error:', error);
-        updateStatus('Грешка при импортиране');
-        showStatus('Грешка при импортиране на презентацията', 'error');
-    }
-}
-
-function reconstructSlimFromHTML(html) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const sections = doc.querySelectorAll('section');
-    
-    let slim = '';
-    
-    sections.forEach((section, index) => {
-        if (index > 0) slim += '\n#slide\n';
-        
-        const type = section.className || 'text-only';
-        slim += `#type ${type}\n`;
-        
-        const dataElements = section.querySelectorAll('div');
-        const dataItems = [];
-        
-        dataElements.forEach(div => {
-            const className = div.className;
-            const content = div.textContent.trim();
-            if (className && content) {
-                if (className === 'title') {
-                    slim += `#title ${content}\n`;
-                } else {
-                    dataItems.push(`${className}=${content}`);
-                }
-            }
-        });
-        
-        if (dataItems.length > 0) {
-            slim += `#data ${dataItems.join(';')}\n`;
-        }
-    });
-    
-    return slim;
-}
-
-function closeBackendDialog() {
-    const dialog = document.getElementById('backend-presentations-dialog');
-    if (dialog) dialog.remove();
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return 'Н/А';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('bg-BG');
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-window.publishPresentation = publishPresentation;
-window.loadFromBackend = loadFromBackend;
-window.importBackendPresentation = importBackendPresentation;
-window.closeBackendDialog = closeBackendDialog;
-
-console.log('Backend integration loaded for editor');

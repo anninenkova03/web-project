@@ -9,28 +9,30 @@
 <body>
     <div class="container">
         <header>
-            <h1>Presentation Manager</h1>
+            <h1>📊 Presentation Manager</h1>
             <p class="subtitle">Управление и преглед на презентации</p>
         </header>
 
         <div class="controls">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Търси презентация...">
+                <input type="text" id="searchInput" placeholder="🔍 Търси презентация...">
             </div>
             <div class="view-toggle">
-                <button class="btn btn-secondary active" id="gridViewBtn">Grid</button>
-                <button class="btn btn-secondary" id="listViewBtn">List</button>
+                <button class="btn btn-secondary active" id="gridViewBtn">📊 Grid</button>
+                <button class="btn btn-secondary" id="listViewBtn">📋 List</button>
             </div>
-            <button class="btn btn-primary" id="refreshBtn">Обнови</button>
+            <button class="btn btn-success" id="newPresentationBtn">➕ Нова презентация</button>
+            <button class="btn btn-primary" id="refreshBtn">🔄 Обнови</button>
         </div>
 
         <div id="loadingState" class="loading" style="display: none;">
-            Зареждане на презентации...
+            ⏳ Зареждане на презентации...
         </div>
 
         <div id="presentationsContainer" class="presentations-grid"></div>
     </div>
 
+    <script type="module" src="../presentationBridge.js"></script>
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>

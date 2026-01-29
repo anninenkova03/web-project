@@ -1,11 +1,12 @@
 import { PRESENTATIONS } from '../data.js';
+import { presentationBridge } from '../presentationBridge.js';
 
 let currentPresentation = null;
 let currentSlideIndex = 0;
 let isFullscreen = false;
 
 let slideContent, presentationTitle, slideCounter, progressBar, prevBtn, nextBtn;
-let backBtn, mapBtn, fullscreenBtn, shortcutsInfo;
+let backBtn, mapBtn, fullscreenBtn, editBtn, shortcutsInfo;
 
 async function init() {
     slideContent = document.getElementById('slideContent');
@@ -17,17 +18,22 @@ async function init() {
     backBtn = document.getElementById('backBtn');
     mapBtn = document.getElementById('mapBtn');
     fullscreenBtn = document.getElementById('fullscreenBtn');
+    editBtn = document.getElementById('editBtn');
     shortcutsInfo = document.getElementById('shortcutsInfo');
 
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = Number(urlParams.get('id'));
     const slideFromMap = Number(urlParams.get('slide'));
 
-    currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    currentPresentation = presentationBridge.getPresentationById(presentationId);
+    
+    if (!currentPresentation) {
+        currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    }
 
     if (!currentPresentation) {
         alert('Презентацията не е намерена');
-        window.location.href = 'dashboard.html';
+        window.location.href = '../dashboard/dashboard.html';
         return;
     }
 
@@ -69,14 +75,16 @@ function renderSlide() {
             slideContent.innerHTML = `
                 <h1>${slide.title}</h1>
                 <p class="subtitle">${slide.data.subtitle || ''}</p>
+                ${slide.data.author ? `<p class="author">${slide.data.author}</p>` : ''}
             `;
             break;
 
         case 'content':
+        case 'text-only':
             slideContent.classList.add('slide-content');
             slideContent.innerHTML = `
                 <h2>${slide.title}</h2>
-                <div>${slide.data.content}</div>
+                <div>${slide.data.content || ''}</div>
             `;
             break;
 
@@ -84,25 +92,61 @@ function renderSlide() {
             slideContent.classList.add('slide-code');
             slideContent.innerHTML = `
                 <h2>${slide.title}</h2>
-                <pre><code>${escapeHtml(slide.data.code)}</code></pre>
+                <pre><code>${escapeHtml(slide.data.code || '')}</code></pre>
+                ${slide.data.language ? `<div class="code-lang">${slide.data.language}</div>` : ''}
             `;
             break;
 
         case 'image-text':
+        case 'image-left':
+        case 'image-right':
             slideContent.classList.add('slide-image-text');
+            const imageOnLeft = slide.type === 'image-left';
             slideContent.innerHTML = `
-                <div>
-                    <img src="${slide.data.image}" alt="${slide.title}">
+                <div class="image-text-container ${imageOnLeft ? 'image-left' : 'image-right'}">
+                    <div class="image-part">
+                        <img src="${slide.data.image}" alt="${slide.title}">
+                    </div>
+                    <div class="text-part">
+                        <h2>${slide.title}</h2>
+                        <p>${slide.data.text || slide.data.content || ''}</p>
+                    </div>
                 </div>
-                <div class="text-content">
-                    <h2>${slide.title}</h2>
-                    <p>${slide.data.text}</p>
+            `;
+            break;
+
+        case 'list':
+            slideContent.classList.add('slide-list');
+            const items = slide.data.items ? slide.data.items.split(';') : [];
+            slideContent.innerHTML = `
+                <h2>${slide.title}</h2>
+                <ul>
+                    ${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+                </ul>
+            `;
+            break;
+
+        case 'two-column':
+            slideContent.classList.add('slide-two-column');
+            slideContent.innerHTML = `
+                <h2>${slide.title}</h2>
+                <div class="two-columns">
+                    <div class="column">
+                        ${slide.data.left || ''}
+                    </div>
+                    <div class="column">
+                        ${slide.data.right || ''}
+                    </div>
                 </div>
             `;
             break;
 
         default:
-            slideContent.innerHTML = `<p>Unknown slide type: ${slide.type}</p>`;
+            slideContent.innerHTML = `
+                <h2>${slide.title}</h2>
+                <p>Type: ${slide.type}</p>
+                <pre>${JSON.stringify(slide.data, null, 2)}</pre>
+            `;
     }
 }
 
@@ -135,6 +179,10 @@ function toggleFullscreen() {
     }
 }
 
+function editPresentation() {
+    window.location.href = `../editor/editor.html?load=${currentPresentation.id}`;
+}
+
 function setupEventListeners() {
     prevBtn.addEventListener('click', prevSlide);
     nextBtn.addEventListener('click', nextSlide);
@@ -148,6 +196,10 @@ function setupEventListeners() {
     });
 
     fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    if (editBtn) {
+        editBtn.addEventListener('click', editPresentation);
+    }
 
     document.addEventListener('keydown', (e) => {
         switch(e.key) {
@@ -164,6 +216,13 @@ function setupEventListeners() {
             case 'F':
                 e.preventDefault();
                 toggleFullscreen();
+                break;
+            case 'e':
+            case 'E':
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    editPresentation();
+                }
                 break;
             case 'Escape':
                 if (isFullscreen) {

@@ -1,10 +1,11 @@
 import { PRESENTATIONS } from '../data.js';
+import { presentationBridge } from '../presentationBridge.js';
 
 let currentPresentation = null;
 let currentView = 'grid';
 
 let presentationTitle, presentationSubtitle, totalSlides, slideTypes, duration;
-let mapContent, gridViewBtn, flowViewBtn, viewBtn, backBtn;
+let mapContent, gridViewBtn, flowViewBtn, viewBtn, backBtn, editBtn;
 
 async function init() {
     presentationTitle = document.getElementById('presentationTitle');
@@ -17,14 +18,22 @@ async function init() {
     flowViewBtn = document.getElementById('flowViewBtn');
     viewBtn = document.getElementById('viewBtn');
     backBtn = document.getElementById('backBtn');
+    editBtn = document.getElementById('editBtn');
 
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = Number(urlParams.get('id'));
 
-    currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    // Try to load from editor storage first, then fall back to static data
+    currentPresentation = presentationBridge.getPresentationById(presentationId);
+    
+    if (!currentPresentation) {
+        // Fallback to static PRESENTATIONS
+        currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    }
+
     if (!currentPresentation) {
         alert('Презентацията не е намерена');
-        window.location.href = 'dashboard.html';
+        window.location.href = '../dashboard/dashboard.html';
         return;
     }
 
@@ -117,14 +126,23 @@ function getTypeLabel(type) {
     const labels = {
         'title': '📌 Title',
         'content': '📝 Content',
+        'text-only': '📝 Text',
         'code': '💻 Code',
-        'image-text': '🖼️ Image'
+        'image-text': '🖼️ Image',
+        'image-left': '🖼️ Image Left',
+        'image-right': '🖼️ Image Right',
+        'list': '📋 List',
+        'two-column': '📊 Two Column'
     };
     return labels[type] || type;
 }
 
 function goToSlide(slideId) {
     window.location.href = `../viewer/viewer.html?id=${currentPresentation.id}&slide=${slideId}`;
+}
+
+function editPresentation() {
+    window.location.href = `../editor/editor.html?load=${currentPresentation.id}`;
 }
 
 function setupEventListeners() {
@@ -149,6 +167,10 @@ function setupEventListeners() {
     backBtn.addEventListener('click', () => {
         window.location.href = `../dashboard/dashboard.html`;
     });
+
+    if (editBtn) {
+        editBtn.addEventListener('click', editPresentation);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);

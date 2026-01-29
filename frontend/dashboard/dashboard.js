@@ -1,10 +1,11 @@
 import { PRESENTATIONS } from '../data.js';
+import { presentationBridge } from '../presentationBridge.js';
 
 let presentations = [];
 let currentView = 'grid';
 let searchTerm = '';
 
-let container, loadingState, searchInput, gridViewBtn, listViewBtn, refreshBtn;
+let container, loadingState, searchInput, gridViewBtn, listViewBtn, refreshBtn, newPresentationBtn;
 
 async function init() {
     container = document.getElementById('presentationsContainer');
@@ -13,6 +14,7 @@ async function init() {
     gridViewBtn = document.getElementById('gridViewBtn');
     listViewBtn = document.getElementById('listViewBtn');
     refreshBtn = document.getElementById('refreshBtn');
+    newPresentationBtn = document.getElementById('newPresentationBtn');
     
     await loadPresentations();
     setupEventListeners();
@@ -24,7 +26,7 @@ async function loadPresentations() {
 
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    presentations = PRESENTATIONS;
+    presentations = presentationBridge.mergeWithStaticData(PRESENTATIONS);
     
     loadingState.style.display = 'none';
     renderPresentations();
@@ -40,7 +42,8 @@ function renderPresentations() {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>Няма намерени презентации</h3>
-                <p>Опитайте с друго търсене</p>
+                <p>Опитайте с друго търсене или създайте нова презентация</p>
+                <button class="btn btn-primary" onclick="openEditor()">Отвори Editor</button>
             </div>
         `;
         return;
@@ -65,6 +68,13 @@ function renderPresentations() {
             viewSlideMap(btn.dataset.id);
         });
     });
+
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editPresentation(btn.dataset.id);
+        });
+    });
 }
 
 function renderCardView(p) {
@@ -75,7 +85,7 @@ function renderCardView(p) {
                 <span class="card-type">${getTypeLabel(p.type)}</span>
             </div>
             <div class="card-meta">
-                <span>${p.slides} слайда</span>
+                <span>${p.slides || (p.slidesData ? p.slidesData.length : 0)} слайда</span>
                 <span>${formatDate(p.date)}</span>
             </div>
             <div class="card-meta">
@@ -83,10 +93,13 @@ function renderCardView(p) {
             </div>
             <div class="card-actions">
                 <button class="btn btn-primary btn-small btn-view" data-id="${p.id}">
-                    Преглед
+                    👁 Преглед
                 </button>
                 <button class="btn btn-secondary btn-small btn-map" data-id="${p.id}">
-                    Карта
+                    🗺️ Карта
+                </button>
+                <button class="btn btn-info btn-small btn-edit" data-id="${p.id}">
+                    ✏️ Редактирай
                 </button>
             </div>
         </div>
@@ -100,17 +113,20 @@ function renderListView(p) {
                 <h3 class="card-title">${p.title}</h3>
                 <div class="card-meta">
                     <span class="card-type">${getTypeLabel(p.type)}</span>
-                    <span>${p.slides} слайда</span>
+                    <span>${p.slides || (p.slidesData ? p.slidesData.length : 0)} слайда</span>
                     <span>${formatDate(p.date)}</span>
                     <span>${p.author}</span>
                 </div>
             </div>
             <div class="list-item-actions">
                 <button class="btn btn-primary btn-small btn-view" data-id="${p.id}">
-                    Преглед
+                    👁 Преглед
                 </button>
                 <button class="btn btn-secondary btn-small btn-map" data-id="${p.id}">
-                    Карта
+                    🗺️ Карта
+                </button>
+                <button class="btn btn-info btn-small btn-edit" data-id="${p.id}">
+                    ✏️ Редактирай
                 </button>
             </div>
         </div>
@@ -121,7 +137,9 @@ function getTypeLabel(type) {
     const labels = {
         'lecture': '📚 Лекция',
         'tutorial': '🎓 Урок',
-        'workshop': '🛠️ Работилница'
+        'workshop': '🛠️ Работилница',
+        'project': '💼 Проект',
+        'demo': '🎬 Демо'
     };
     return labels[type] || type;
 }
@@ -137,6 +155,14 @@ function viewPresentation(id) {
 
 function viewSlideMap(id) {
     window.location.href = `../slide-map/map.html?id=${id}`;
+}
+
+function editPresentation(id) {
+    window.location.href = `../editor/editor.html?load=${id}`;
+}
+
+function openEditor() {
+    window.location.href = `../editor/editor.html`;
 }
 
 function setupEventListeners() {
@@ -162,6 +188,14 @@ function setupEventListeners() {
     refreshBtn.addEventListener('click', () => {
         loadPresentations();
     });
+
+    if (newPresentationBtn) {
+        newPresentationBtn.addEventListener('click', openEditor);
+    }
 }
+
+window.openEditor = openEditor;
+
+document.addEventListener('DOMContentLoaded', init);
 
 document.addEventListener('DOMContentLoaded', init);

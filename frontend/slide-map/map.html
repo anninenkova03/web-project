@@ -10,12 +10,13 @@
     <div class="container">
         <header>
             <div class="header-info">
-                <h1 id="presentationTitle">Карта на презентацията</h1>
+                <h1 id="presentationTitle">🗺️ Карта на презентацията</h1>
                 <p id="presentationSubtitle">Визуализация на структурата</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-primary" id="viewBtn">Преглед</button>
-                <button class="btn btn-secondary" id="backBtn">Назад</button>
+                <button class="btn btn-primary" id="viewBtn">👁️ Преглед</button>
+                <button class="btn btn-info" id="editBtn">✏️ Редактирай</button>
+                <button class="btn btn-secondary" id="backBtn">← Назад</button>
             </div>
         </header>
 
@@ -23,8 +24,8 @@
             <div class="map-header">
                 <h2>Структура на слайдовете</h2>
                 <div class="view-toggle">
-                    <button class="btn active" id="gridViewBtn">Grid</button>
-                    <button class="btn" id="flowViewBtn">Flow</button>
+                    <button class="btn active" id="gridViewBtn">📊 Grid</button>
+                    <button class="btn" id="flowViewBtn">📈 Flow</button>
                 </div>
             </div>
 
@@ -50,25 +51,26 @@
                 <div class="legend-items">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #e3f2fd;"></div>
-                        <span>Title</span>
+                        <span>📌 Title</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #f3e5f5;"></div>
-                        <span>Content</span>
+                        <span>📝 Content</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #e8f5e9;"></div>
-                        <span>Code</span>
+                        <span>💻 Code</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #fff3e0;"></div>
-                        <span>Image-Text</span>
+                        <span>🖼️ Image</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script type="module" src="../presentationBridge.js"></script>
     <script type="module" src="map.js"></script>
 </body>
 </html>
