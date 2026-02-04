@@ -23,9 +23,11 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = Number(urlParams.get('id'));
 
+    // Try to load from editor storage first, then fall back to static data
     currentPresentation = presentationBridge.getPresentationById(presentationId);
     
     if (!currentPresentation) {
+        // Fallback to static PRESENTATIONS
         currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
     }
 

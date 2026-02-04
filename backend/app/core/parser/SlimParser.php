@@ -5,51 +5,104 @@ class SlimParser {
     public static function parse(string $text): Presentation {
         $lines = array_filter(array_map('trim', explode("\n", $text)));
 
-        $meta = [];
+        $title = 'Untitled';
+        $type = 'lecture';
+        $slug = uniqid('pres_');
+        
         $slides = [];
-        $current = null;
-        $order = 1;
+        $currentSlide = null;
+        $order = 0;
 
         foreach ($lines as $line) {
-            if (str_starts_with($line, '@')) {
-                [$k, $v] = explode(':', substr($line, 1), 2);
-                $meta[$k] = trim($v);
+            // Parse presentation metadata (first occurrence)
+            if (str_starts_with($line, '#presentation')) {
+                $parts = explode(' ', $line, 2);
+                if (isset($parts[1])) {
+                    $title = trim($parts[1]);
+                }
+                continue;
+            }
+            
+            if (str_starts_with($line, '#slug')) {
+                $parts = explode(' ', $line, 2);
+                if (isset($parts[1])) {
+                    $slug = trim($parts[1]);
+                }
+                continue;
+            }
+            
+            if (str_starts_with($line, '#presentationType')) {
+                $parts = explode(' ', $line, 2);
+                if (isset($parts[1])) {
+                    $type = trim($parts[1]);
+                }
                 continue;
             }
 
-            if ($line === '---') {
-                if ($current) {
-                    $slides[] = $current;
-                    $order++;
+            // New slide marker
+            if (str_starts_with($line, '#slide')) {
+                if ($currentSlide !== null) {
+                    $slides[] = $currentSlide;
                 }
-                $current = ['type' => null, 'data' => []];
+                $order++;
+                $currentSlide = [
+                    'type' => 'text-only',
+                    'data' => [],
+                    'order' => $order
+                ];
+                continue;
+            }
+
+            if ($currentSlide === null) {
+                // First slide auto-creation
+                $order++;
+                $currentSlide = [
+                    'type' => 'text-only',
+                    'data' => [],
+                    'order' => $order
+                ];
+            }
+
+            // Parse slide directives
+            if (str_starts_with($line, '#title')) {
+                $currentSlide['data']['title'] = trim(substr($line, 6));
                 continue;
             }
 
             if (str_starts_with($line, '#type')) {
-                $current['type'] = trim(substr($line, 5));
+                $currentSlide['type'] = trim(substr($line, 5));
                 continue;
             }
 
-            if (str_contains($line, '=')) {
-                [$k, $v] = explode('=', $line, 2);
-                $current['data'][$k] = $v;
+            if (str_starts_with($line, '#data')) {
+                $dataStr = trim(substr($line, 5));
+                $pairs = explode(';', $dataStr);
+                
+                foreach ($pairs as $pair) {
+                    if (str_contains($pair, '=')) {
+                        [$k, $v] = explode('=', $pair, 2);
+                        $currentSlide['data'][trim($k)] = trim($v);
+                    }
+                }
+                continue;
             }
         }
 
-        if ($current) {
-            $slides[] = $current;
+        // Don't forget the last slide
+        if ($currentSlide !== null) {
+            $slides[] = $currentSlide;
         }
 
-        $presentation = new Presentation(
-            $meta['slug'] ?? uniqid(),
-            $meta['title'] ?? 'Untitled',
-            $meta['presentationType'] ?? 'default'
-        );
+        // Create presentation object
+        $presentation = new Presentation($slug, $title, $type);
 
-        foreach ($slides as $s) {
+        foreach ($slides as $slideData) {
             $presentation->addSlide(
-                new Slide($order++, $s['type'], $s['data'])
+                new Slide(
+                    $slideData['order'],
+                    $slideData['type'],
+                    $slideData['data']
+                )
             );
         }
 

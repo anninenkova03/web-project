@@ -17,11 +17,27 @@ class PresentationRepository {
     }
 
     public function all(): array {
-        return $this->db->query(
+        $stmt = $this->db->query(
             "SELECT p.*, COUNT(s.id) AS slides
              FROM presentations p
              LEFT JOIN slides s ON p.id = s.presentation_id
+             GROUP BY p.id
+             ORDER BY p.created_at DESC"
+        );
+        return $stmt->fetchAll();
+    }
+    
+    public function getById(int $id): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT p.*, COUNT(s.id) AS slides
+             FROM presentations p
+             LEFT JOIN slides s ON p.id = s.presentation_id
+             WHERE p.id = ?
              GROUP BY p.id"
-        )->fetchAll();
+        );
+        $stmt->execute([$id]);
+        $result = $stmt->fetch();
+        
+        return $result ?: null;
     }
 }

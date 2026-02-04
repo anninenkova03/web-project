@@ -6,7 +6,7 @@ return [
         'name' => 'web_presentations',
         'user' => 'root',
         'pass' => ''
-    ]
+    ],
     'paths' => [
         'generated' => __DIR__ . '/../generated/presentations'
     ]

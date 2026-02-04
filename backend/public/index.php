@@ -1,20 +1,80 @@
 <?php
 
-require_once '../config/database.php';
-require_once '../app/core/parser/SlimParser.php';
-require_once '../app/core/model/Presentation.php';
-require_once '../app/core/model/Slide.php';
-require_once '../app/core/generator/HtmlGenerator.php';
-require_once '../app/repositories/PresentationRepository.php';
-require_once '../app/repositories/SlideRepository.php';
-require_once '../app/services/PresentationService.php';
-require_once '../app/controllers/PresentationController.php';
+// Enable CORS for frontend
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
 
-$uri = $_SERVER['REQUEST_URI'];
-$controller = new PresentationController();
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
-if ($uri === '/api/presentations') {
-    $controller->index();
-} elseif ($uri === '/api/generate' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $controller->generate();
+// Autoloader for classes
+spl_autoload_register(function ($class) {
+    $paths = [
+        __DIR__ . '/../app/controllers/',
+        __DIR__ . '/../app/core/parser/',
+        __DIR__ . '/../app/core/model/',
+        __DIR__ . '/../app/core/generator/',
+        __DIR__ . '/../app/repositories/',
+        __DIR__ . '/../app/services/',
+        __DIR__ . '/../config/'
+    ];
+    
+    foreach ($paths as $path) {
+        $file = $path . $class . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
+
+// Initialize database
+require_once __DIR__ . '/../config/database.php';
+
+try {
+    // Parse request URI
+    $requestUri = $_SERVER['REQUEST_URI'];
+    $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+    $uri = str_replace($scriptName, '', $requestUri);
+    $uri = strtok($uri, '?'); // Remove query string
+    
+    $controller = new PresentationController();
+    
+    // Route handling
+    switch ($uri) {
+        case '/api/presentations':
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                $controller->index();
+            }
+            break;
+            
+        case '/api/generate':
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $controller->generate();
+            }
+            break;
+            
+        case '/api/presentation':
+            if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+                $controller->getById($_GET['id']);
+            }
+            break;
+            
+        default:
+            http_response_code(404);
+            echo json_encode(['error' => 'Endpoint not found']);
+            break;
+    }
+    
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Server error',
+        'message' => $e->getMessage()
+    ]);
 }
