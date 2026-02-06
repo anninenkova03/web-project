@@ -1,7 +1,6 @@
 class APIService {
     constructor() {
-        // IMPORTANT: Update this path to match your actual backend location
-        this.baseURL = 'http://localhost/your-project/backend/public';
+        this.baseURL = 'http://localhost/web-project-complete/backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
     }
@@ -10,7 +9,7 @@ class APIService {
         try {
             const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint}`;
             
-            console.log('API Request:', url);
+            console.log('API Request:', url, options.method || 'GET');
             
             const response = await fetch(url, {
                 headers: {
@@ -25,8 +24,7 @@ class APIService {
             }
 
             const data = await response.json();
-            
-            // Handle the new response format with success/data structure
+
             if (data.success === false) {
                 throw new Error(data.error || 'API request failed');
             }
@@ -73,7 +71,6 @@ class APIService {
             
         } catch (error) {
             console.error('Error loading presentations:', error);
-            // Return empty array on error instead of throwing
             return [];
         }
     }
@@ -113,8 +110,8 @@ class APIService {
         try {
             const presentation = await this.request(`/api/presentation?id=${id}`);
             
-            if (!presentation) {
-                throw new Error(`Презентация с ID ${id} не е намерена`);
+            if (!$presentation) {
+                throw new Error(`Presentation with ID ${id} not found`);
             }
 
             this.cache.set(cacheKey, {
@@ -130,14 +127,52 @@ class APIService {
         }
     }
 
+    async updatePresentation(id, slimContent) {
+        try {
+            const response = await this.request(`/api/presentation?id=${id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    slim: slimContent
+                })
+            });
+
+            console.log('Presentation updated:', response);
+            
+            this.clearCache();
+            
+            return response;
+            
+        } catch (error) {
+            console.error('Error updating presentation:', error);
+            throw error;
+        }
+    }
+
+    async deletePresentation(id) {
+        try {
+            await this.request(`/api/presentation?id=${id}`, {
+                method: 'DELETE'
+            });
+
+            console.log(`Presentation ${id} deleted`);
+            
+            this.clearCache();
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Error deleting presentation:', error);
+            throw error;
+        }
+    }
+
     async getPresentationHTML(slug) {
         try {
-            // Adjust path based on your actual structure
             const htmlURL = `${this.baseURL.replace('/public', '')}/generated/presentations/${slug}/index.html`;
             
             const response = await fetch(htmlURL);
             if (!response.ok) {
-                throw new Error('HTML файлът не е намерен');
+                throw new Error('HTML file not found');
             }
 
             const html = await response.text();
@@ -174,7 +209,7 @@ class APIService {
                 id: slideId++,
                 order: index + 1,
                 type: slideType,
-                title: slideData.title || `Слайд ${index + 1}`,
+                title: slideData.title || `Slide ${index + 1}`,
                 data: slideData,
                 next: index < sections.length - 1 ? slideId : null,
                 previous: index > 0 ? slideId - 2 : null
@@ -192,12 +227,11 @@ class APIService {
         try {
             const presentation = await this.getPresentation(id);
             
-            // Convert backend format to frontend format
             const slides = presentation.slides.map((slide, index) => ({
                 id: slide.id,
                 order: slide.order,
                 type: slide.type,
-                title: slide.data.title || `Слайд ${index + 1}`,
+                title: slide.data.title || `Slide ${index + 1}`,
                 data: slide.data,
                 next: index < presentation.slides.length - 1 ? presentation.slides[index + 1].id : null,
                 previous: index > 0 ? presentation.slides[index - 1].id : null
@@ -221,16 +255,16 @@ class APIService {
     getDemoPresentation() {
         return {
             id: 1,
-            title: "Demo Презентация",
+            title: "Demo Presentation",
             type: "lecture",
             slides: [
                 {
                     id: 1,
                     order: 1,
                     type: "title",
-                    title: "Въведение в Web Technologies",
+                    title: "Introduction to Web Technologies",
                     data: {
-                        title: "Въведение в Web Technologies",
+                        title: "Introduction to Web Technologies",
                         subtitle: "HTML, CSS, JavaScript & PHP"
                     },
                     next: 2,
@@ -240,9 +274,9 @@ class APIService {
                     id: 2,
                     order: 2,
                     type: "text-only",
-                    title: "Какво ще научим?",
+                    title: "What will we learn?",
                     data: {
-                        content: "Основи на HTML5, CSS3, JavaScript, PHP и MySQL"
+                        content: "Basics of HTML5, CSS3, JavaScript, PHP and MySQL"
                     },
                     next: null,
                     previous: 1
@@ -258,8 +292,9 @@ class APIService {
 
     async healthCheck() {
         try {
-            const response = await fetch(this.baseURL);
-            return response.ok;
+            const response = await this.request('/api/health');
+            console.log('Backend health check:', response);
+            return true;
         } catch (error) {
             console.error('Backend not available:', error);
             return false;
@@ -278,4 +313,4 @@ if (typeof window !== 'undefined') {
     window.apiService = apiService;
 }
 
-console.log('API Service loaded');
+console.log('API Service loaded successfully');

@@ -45,4 +45,9 @@ class SlideRepository {
         
         return $slides;
     }
+    
+    public function deleteByPresentationId(int $presentationId): void {
+        $stmt = $this->db->prepare("DELETE FROM slides WHERE presentation_id = ?");
+        $stmt->execute([$presentationId]);
+    }
 }

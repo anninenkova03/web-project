@@ -40,4 +40,20 @@ class PresentationRepository {
         
         return $result ?: null;
     }
+    
+    public function update(int $id, Presentation $p): bool {
+        $stmt = $this->db->prepare(
+            "UPDATE presentations
+             SET slug = ?, title = ?, presentation_type = ?
+             WHERE id = ?"
+        );
+        $stmt->execute([$p->slug, $p->title, $p->type, $id]);
+        return $stmt->rowCount() > 0;
+    }
+    
+    public function delete(int $id): bool {
+        $stmt = $this->db->prepare("DELETE FROM presentations WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
+    }
 }

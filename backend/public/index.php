@@ -2,7 +2,7 @@
 
 // Enable CORS for frontend
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 
@@ -62,7 +62,19 @@ try {
         case '/api/presentation':
             if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
                 $controller->getById($_GET['id']);
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'PUT' && isset($_GET['id'])) {
+                $controller->update($_GET['id']);
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE' && isset($_GET['id'])) {
+                $controller->delete($_GET['id']);
             }
+            break;
+            
+        case '/api/health':
+            echo json_encode([
+                'success' => true,
+                'message' => 'API is running',
+                'timestamp' => date('Y-m-d H:i:s')
+            ]);
             break;
             
         default:
