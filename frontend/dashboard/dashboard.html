@@ -2,37 +2,267 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Презентации - Dashboard</title>
+    <title>Dashboard - Web Presentations</title>
+    <link rel="stylesheet" href="../shared/theme.css">
     <link rel="stylesheet" href="dashboard.css">
+    <style>
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-info { display: flex; gap: 15px; align-items: center; }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .search-filters {
+            background: white;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .presentation-card {
+            position: relative;
+        }
+        .like-btn, .favorite-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .favorite-btn { right: 50px; }
+        .like-btn:hover, .favorite-btn:hover {
+            transform: scale(1.1);
+        }
+        .like-btn.liked { background: #ff6b6b; color: white; }
+        .favorite-btn.favorited { background: #ffd93d; color: #333; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 Presentation Manager</h1>
-            <p class="subtitle">Управление и преглед на презентации</p>
-        </header>
-
-        <div class="controls">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Търси презентация...">
-            </div>
-            <div class="view-toggle">
-                <button class="btn btn-secondary active" id="gridViewBtn">📊 Grid</button>
-                <button class="btn btn-secondary" id="listViewBtn">📋 List</button>
-            </div>
-            <button class="btn btn-success" id="newPresentationBtn">➕ Нова презентация</button>
-            <button class="btn btn-primary" id="refreshBtn">🔄 Обнови</button>
+    <div class="dashboard-header">
+        <h1>📊 Dashboard</h1>
+        <div class="user-info">
+            <span id="userName">Loading...</span>
+            <div class="user-avatar" id="userAvatar">?</div>
+            <button onclick="handleLogout()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Изход</button>
         </div>
-
-        <div id="loadingState" class="loading" style="display: none;">
-            ⏳ Зареждане на презентации...
-        </div>
-
-        <div id="presentationsContainer" class="presentations-grid"></div>
     </div>
 
-    <script type="module" src="../presentationBridge.js"></script>
-    <script type="module" src="dashboard.js"></script>
+    <div class="search-filters">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Търси презентации...">
+            <button onclick="loadPresentations()" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 25px; cursor: pointer;">Търси</button>
+        </div>
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Всички</button>
+            <button class="filter-btn" data-filter="lecture">Лекция</button>
+            <button class="filter-btn" data-filter="tutorial">Урок</button>
+            <button class="filter-btn" data-filter="project">Проект</button>
+            <button class="filter-btn" data-filter="my">Моите</button>
+            <button class="filter-btn" data-filter="favorites">❤️ Любими</button>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <div id="presentationsContainer" class="presentations-grid"></div>
+        <div id="pagination" style="margin-top: 30px;"></div>
+    </div>
+
+    <script src="../shared/AuthService.js"></script>
+    <script src="../shared/APIService.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentFilter = 'all';
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!authService.isAuthenticated()) {
+                window.location.href = '../auth/auth.html';
+                return;
+            }
+            currentUser = await authService.getCurrentUser();
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.full_name || currentUser.username;
+                document.getElementById('userAvatar').textContent = currentUser.username[0].toUpperCase();
+            }
+            initFilters();
+            await loadPresentations();
+        });
+
+        function initFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    currentPage = 1;
+                    loadPresentations();
+                });
+            });
+        }
+
+        async function loadPresentations() {
+            const search = document.getElementById('searchInput').value;
+            const filters = { page: currentPage, limit: 12, search };
+            
+            if (currentFilter !== 'all' && currentFilter !== 'my' && currentFilter !== 'favorites') {
+                filters.type = currentFilter;
+            }
+            if (currentFilter === 'my' && currentUser) {
+                filters.user_id = currentUser.id;
+            }
+
+            try {
+                let data;
+                if (currentFilter === 'favorites') {
+                    data = { data: await apiService.getFavorites(), pagination: {} };
+                } else {
+                    data = await apiService.getPresentations(filters);
+                }
+                renderPresentations(data.data || []);
+                renderPagination(data.pagination);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('presentationsContainer').innerHTML = '<p>Грешка при зареждане</p>';
+            }
+        }
+
+        function renderPresentations(presentations) {
+            const container = document.getElementById('presentationsContainer');
+            if (!presentations.length) {
+                container.innerHTML = '<p>Няма намерени презентации</p>';
+                return;
+            }
+            container.innerHTML = presentations.map(p => `
+                <div class="presentation-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative;">
+                    <button class="like-btn ${p.is_liked ? 'liked' : ''}" onclick="toggleLike(${p.id}, this)">❤️ ${p.likes_count || 0}</button>
+                    <button class="favorite-btn ${p.is_favorited ? 'favorited' : ''}" onclick="toggleFavorite(${p.id}, this)">⭐</button>
+                    <h3>${p.title}</h3>
+                    <p>${p.description || 'Без описание'}</p>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button onclick="viewPresentation(${p.id})" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Преглед</button>
+                        ${p.user_id === currentUser.id || authService.isAdmin() ? `
+                            <button onclick="editPresentation(${p.id})" style="padding: 10px 20px; background: #4dabf7; color: white; border: none; border-radius: 6px; cursor: pointer;">Редактирай</button>
+                            <button onclick="deletePresentation(${p.id})" style="padding: 10px 20px; background: #ff6b6b; color: white; border: none; border-radius: 6px; cursor: pointer;">Изтрий</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPagination(pagination) {
+            if (!pagination || !pagination.total_pages || pagination.total_pages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            const html = `
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <button onclick="changePage(${pagination.current_page - 1})" ${pagination.current_page === 1 ? 'disabled' : ''}>Предишна</button>
+                    ${Array.from({length: pagination.total_pages}, (_, i) => i + 1).map(p => 
+                        `<button onclick="changePage(${p})" ${p === pagination.current_page ? 'style="background: #667eea; color: white;"' : ''}>${p}</button>`
+                    ).join('')}
+                    <button onclick="changePage(${pagination.current_page + 1})" ${pagination.current_page === pagination.total_pages ? 'disabled' : ''}>Следваща</button>
+                </div>
+            `;
+            document.getElementById('pagination').innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            loadPresentations();
+        }
+
+        async function toggleLike(id, btn) {
+            try {
+                const result = await apiService.toggleLike(id);
+                btn.classList.toggle('liked', result.is_liked);
+                btn.textContent = `❤️ ${result.likes_count}`;
+            } catch (error) {
+                alert('Грешка при харесване');
+            }
+        }
+
+        async function toggleFavorite(id, btn) {
+            try {
+                const result = await apiService.toggleFavorite(id);
+                btn.classList.toggle('favorited', result.is_favorited);
+            } catch (error) {
+                alert('Грешка при добавяне в любими');
+            }
+        }
+
+        function viewPresentation(id) {
+            window.location.href = `../viewer/viewer.html?id=${id}`;
+        }
+
+        function editPresentation(id) {
+            window.location.href = `../editor/editor.html?id=${id}`;
+        }
+
+        async function deletePresentation(id) {
+            if (!confirm('Сигурни ли сте?')) return;
+            try {
+                await apiService.deletePresentation(id);
+                await loadPresentations();
+                alert('Изтрито успешно!');
+            } catch (error) {
+                alert('Грешка при изтриване');
+            }
+        }
+
+        async function handleLogout() {
+            await authService.logout();
+            window.location.href = '../auth/auth.html';
+        }
+    </script>
 </body>
 </html>

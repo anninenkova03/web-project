@@ -2,7 +2,21 @@
 
 ## 🚀 Get Started in 5 Minutes
 
-### Option 1: Manual Setup
+### Option 1: Automated Setup (Recommended)
+
+1. **Run the setup script:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+2. **Follow the prompts** to configure your database and project path
+
+3. **Access the application:**
+   - Editor: `http://localhost/your-path/frontend/editor/editor.html`
+   - Dashboard: `http://localhost/your-path/frontend/dashboard/dashboard.html`
+
+### Option 2: Manual Setup
 
 #### Step 1: Database
 
