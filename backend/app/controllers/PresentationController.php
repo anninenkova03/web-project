@@ -8,12 +8,8 @@ class PresentationController {
         $this->service = new PresentationService();
     }
 
-    /**
-     * Get all presentations with search, filters, pagination
-     */
     public function index(): void {
         try {
-            // Extract query parameters
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 20;
             $search = $_GET['search'] ?? '';
@@ -53,9 +49,6 @@ class PresentationController {
         }
     }
 
-    /**
-     * Generate presentation from SLIM (requires auth)
-     */
     public function generate(): void {
         try {
             Auth::require();
@@ -75,7 +68,6 @@ class PresentationController {
             $userId = Auth::id();
             $result = $this->service->createFromSlim($data['slim'], $userId);
             
-            // Log activity
             ActivityLogger::log('create', 'presentation', $result['id'], 
                 'Created presentation: ' . $result['title']);
             
@@ -92,10 +84,7 @@ class PresentationController {
             ]);
         }
     }
-    
-    /**
-     * Get presentation by ID
-     */
+
     public function getById(int $id): void {
         try {
             $presentation = $this->service->getById($id);
@@ -108,8 +97,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // Check if presentation is public or user has access
+
             if (!$presentation['is_public'] && !Auth::canAccess('presentations', $id)) {
                 http_response_code(403);
                 echo json_encode([
@@ -118,11 +106,9 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // Increment view count
+
             $this->service->incrementViewCount($id, Auth::id());
-            
-            // Get additional data if user is authenticated
+
             if (Auth::check()) {
                 $presentation['is_liked'] = $this->service->isLikedByUser($id, Auth::id());
                 $presentation['is_favorited'] = $this->service->isFavoritedByUser($id, Auth::id());
@@ -141,9 +127,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Update presentation (requires ownership or admin)
-     */
     public function update(int $id): void {
         try {
             Auth::require();
@@ -179,8 +162,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // Log activity
+
             ActivityLogger::log('update', 'presentation', $id, 
                 'Updated presentation: ' . $result['title']);
             
@@ -197,10 +179,7 @@ class PresentationController {
             ]);
         }
     }
-    
-    /**
-     * Delete presentation (requires ownership or admin)
-     */
+
     public function delete(int $id): void {
         try {
             Auth::require();
@@ -224,8 +203,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // Log activity
+
             ActivityLogger::log('delete', 'presentation', $id, 'Deleted presentation');
             
             echo json_encode([
@@ -241,9 +219,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Like/Unlike presentation
-     */
     public function toggleLike(int $id): void {
         try {
             Auth::require();
@@ -266,9 +241,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Favorite/Unfavorite presentation
-     */
     public function toggleFavorite(int $id): void {
         try {
             Auth::require();
@@ -290,9 +262,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Get user's favorites
-     */
     public function getFavorites(): void {
         try {
             Auth::require();
@@ -312,9 +281,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Get presentation comments
-     */
     public function getComments(int $id): void {
         try {
             $comments = $this->service->getComments($id);
@@ -332,9 +298,6 @@ class PresentationController {
         }
     }
     
-    /**
-     * Add comment to presentation
-     */
     public function addComment(int $id): void {
         try {
             Auth::require();
@@ -376,14 +339,10 @@ class PresentationController {
         }
     }
     
-    /**
-     * Delete comment
-     */
     public function deleteComment(int $commentId): void {
         try {
             Auth::require();
             
-            // Check if user owns the comment or is admin
             $db = Database::get();
             $stmt = $db->prepare("SELECT user_id FROM comments WHERE id = ?");
             $stmt->execute([$commentId]);
@@ -421,10 +380,7 @@ class PresentationController {
             ]);
         }
     }
-    
-    /**
-     * Get presentation history
-     */
+
     public function getHistory(int $id): void {
         try {
             Auth::require();

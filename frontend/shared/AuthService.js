@@ -1,13 +1,10 @@
 class AuthService {
     constructor() {
-        this.baseURL = 'http://localhost/web-project-final/backend/public';
+        this.baseURL = 'http://localhost/web-project/backend/public';
         this.tokenKey = 'auth_token';
         this.userKey = 'auth_user';
     }
 
-    /**
-     * Register new user
-     */
     async register(userData) {
         try {
             const response = await fetch(`${this.baseURL}/api/auth/register`, {
@@ -22,7 +19,6 @@ class AuthService {
                 throw new Error(data.error || 'Registration failed');
             }
 
-            // Save token and user
             this.saveAuth(data.data.token, data.data.user);
 
             return data.data;
@@ -32,9 +28,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Login user
-     */
     async login(login, password) {
         try {
             const response = await fetch(`${this.baseURL}/api/auth/login`, {
@@ -49,7 +42,6 @@ class AuthService {
                 throw new Error(data.error || 'Login failed');
             }
 
-            // Save token and user
             this.saveAuth(data.data.token, data.data.user);
 
             return data.data;
@@ -59,9 +51,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Logout user
-     */
     async logout() {
         try {
             const token = this.getToken();
@@ -78,9 +67,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Get current user profile
-     */
     async getCurrentUser() {
         try {
             const token = this.getToken();
@@ -104,9 +90,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Update user profile
-     */
     async updateProfile(profileData) {
         try {
             const token = this.getToken();
@@ -133,9 +116,6 @@ class AuthService {
         }
     }
 
-    /**
-     * Change password
-     */
     async changePassword(currentPassword, newPassword, newPasswordConfirmation) {
         try {
             const token = this.getToken();
@@ -165,31 +145,19 @@ class AuthService {
         }
     }
 
-    /**
-     * Check if user is authenticated
-     */
     isAuthenticated() {
         return !!this.getToken();
     }
 
-    /**
-     * Check if user is admin
-     */
     isAdmin() {
         const user = this.getUser();
         return user && user.role === 'admin';
     }
 
-    /**
-     * Get stored token
-     */
     getToken() {
         return localStorage.getItem(this.tokenKey);
     }
 
-    /**
-     * Get stored user
-     */
     getUser() {
         const userStr = localStorage.getItem(this.userKey);
         try {
@@ -199,42 +167,28 @@ class AuthService {
         }
     }
 
-    /**
-     * Save authentication data
-     */
     saveAuth(token, user) {
         localStorage.setItem(this.tokenKey, token);
         localStorage.setItem(this.userKey, JSON.stringify(user));
     }
 
-    /**
-     * Save user data
-     */
     saveUser(user) {
         localStorage.setItem(this.userKey, JSON.stringify(user));
     }
 
-    /**
-     * Clear authentication data
-     */
     clearAuth() {
         localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
     }
 
-    /**
-     * Get authorization header
-     */
     getAuthHeader() {
         const token = this.getToken();
         return token ? { 'Authorization': `Bearer ${token}` } : {};
     }
 }
 
-// Create global instance
 const authService = new AuthService();
 
-// Make available globally
 if (typeof window !== 'undefined') {
     window.AuthService = AuthService;
     window.authService = authService;

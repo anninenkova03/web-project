@@ -1,6 +1,6 @@
 class APIService {
     constructor() {
-        this.baseURL = 'http://localhost/web-project-final/backend/public';
+        this.baseURL = 'http://localhost/web-project/backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
     }
@@ -8,8 +8,7 @@ class APIService {
     async request(endpoint, options = {}) {
         try {
             const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint}`;
-            
-            // Add auth header if available
+
             const authHeaders = authService ? authService.getAuthHeader() : {};
             
             const response = await fetch(url, {
@@ -22,7 +21,6 @@ class APIService {
             });
 
             if (response.status === 401) {
-                // Unauthorized - clear auth and redirect to login
                 if (authService) {
                     authService.clearAuth();
                     window.location.href = '../auth/auth.html';
@@ -44,7 +42,6 @@ class APIService {
         }
     }
 
-    // PRESENTATIONS
     async getPresentations(filters = {}) {
         const params = new URLSearchParams(filters);
         const data = await this.request(`/api/presentations?${params}`);
@@ -79,7 +76,6 @@ class APIService {
         return true;
     }
 
-    // LIKES & FAVORITES
     async toggleLike(id) {
         return await this.request(`/api/presentation/like?id=${id}`, { method: 'POST' });
     }
@@ -92,7 +88,6 @@ class APIService {
         return await this.request('/api/favorites');
     }
 
-    // COMMENTS
     async getComments(presentationId) {
         return await this.request(`/api/presentation/comments?id=${presentationId}`);
     }
@@ -107,13 +102,9 @@ class APIService {
     async deleteComment(commentId) {
         return await this.request(`/api/comment?id=${commentId}`, { method: 'DELETE' });
     }
-
-    // HISTORY
     async getHistory(presentationId) {
         return await this.request(`/api/presentation/history?id=${presentationId}`);
     }
-
-    // ADMIN
     async getAdminDashboard() {
         return await this.request('/api/admin/dashboard');
     }

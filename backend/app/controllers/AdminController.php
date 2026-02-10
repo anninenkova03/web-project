@@ -1,36 +1,26 @@
 <?php
 
 class AdminController {
-    
-    /**
-     * Get dashboard statistics
-     */
     public function dashboard(): void {
         try {
             Auth::requireAdmin();
             
             $db = Database::get();
-            
-            // Get statistics
+
             $stats = [];
-            
-            // Total users
+
             $stmt = $db->query("SELECT COUNT(*) as count FROM users");
             $stats['total_users'] = $stmt->fetch()['count'];
-            
-            // Total presentations
+
             $stmt = $db->query("SELECT COUNT(*) as count FROM presentations");
             $stats['total_presentations'] = $stmt->fetch()['count'];
-            
-            // Total comments
+
             $stmt = $db->query("SELECT COUNT(*) as count FROM comments WHERE is_deleted = FALSE");
             $stats['total_comments'] = $stmt->fetch()['count'];
-            
-            // Total views
+
             $stmt = $db->query("SELECT SUM(view_count) as total FROM presentations");
             $stats['total_views'] = $stmt->fetch()['total'] ?? 0;
-            
-            // Recent activities
+
             $stmt = $db->query("
                 SELECT al.*, u.username 
                 FROM activity_log al
@@ -39,8 +29,7 @@ class AdminController {
                 LIMIT 10
             ");
             $stats['recent_activities'] = $stmt->fetchAll();
-            
-            // Popular presentations
+
             $stmt = $db->query("
                 SELECT p.*, u.username,
                     (SELECT COUNT(*) FROM presentation_likes pl WHERE pl.presentation_id = p.id) as likes
@@ -65,9 +54,6 @@ class AdminController {
         }
     }
     
-    /**
-     * Get all users (admin only)
-     */
     public function getUsers(): void {
         try {
             Auth::requireAdmin();
@@ -77,12 +63,10 @@ class AdminController {
             $offset = ($page - 1) * $limit;
             
             $db = Database::get();
-            
-            // Get total count
+
             $stmt = $db->query("SELECT COUNT(*) as count FROM users");
             $total = $stmt->fetch()['count'];
-            
-            // Get users with stats
+
             $stmt = $db->prepare("
                 SELECT 
                     u.*,
@@ -98,7 +82,6 @@ class AdminController {
             $stmt->execute([$limit, $offset]);
             $users = $stmt->fetchAll();
             
-            // Remove passwords
             foreach ($users as &$user) {
                 unset($user['password']);
             }
@@ -122,10 +105,7 @@ class AdminController {
             ]);
         }
     }
-    
-    /**
-     * Toggle user active status
-     */
+
     public function toggleUserStatus(int $userId): void {
         try {
             Auth::requireAdmin();
@@ -152,9 +132,6 @@ class AdminController {
         }
     }
     
-    /**
-     * Change user role
-     */
     public function changeUserRole(int $userId): void {
         try {
             Auth::requireAdmin();
@@ -191,15 +168,11 @@ class AdminController {
             ]);
         }
     }
-    
-    /**
-     * Delete user
-     */
+
     public function deleteUser(int $userId): void {
         try {
             Auth::requireAdmin();
-            
-            // Cannot delete yourself
+
             if ($userId === Auth::id()) {
                 http_response_code(400);
                 echo json_encode([
@@ -227,9 +200,6 @@ class AdminController {
         }
     }
     
-    /**
-     * Get all activity logs
-     */
     public function getActivityLogs(): void {
         try {
             Auth::requireAdmin();

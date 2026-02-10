@@ -49,7 +49,7 @@ class APIService {
                 type: p.presentation_type,
                 slides: parseInt(p.slides) || 0,
                 date: p.created_at,
-                author: 'System', // Backend-ът няма author поле засега
+                author: 'System',
                 slug: p.slug
             }));
 

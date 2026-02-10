@@ -140,7 +140,6 @@ class Auth {
             $db = Database::get();
             $db->exec("DELETE FROM sessions WHERE expires_at < NOW()");
         } catch (Exception $e) {
-            // Silent fail
         }
     }
 

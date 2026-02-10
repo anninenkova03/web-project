@@ -1,6 +1,4 @@
-// Auth page logic
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if already logged in
     if (authService.isAuthenticated()) {
         window.location.href = '../dashboard/dashboard.html';
         return;
@@ -18,11 +16,9 @@ function initializeTabs() {
         tab.addEventListener('click', () => {
             const targetTab = tab.dataset.tab;
 
-            // Update active tab
             tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
 
-            // Update active form
             forms.forEach(form => {
                 if (form.id === targetTab + 'Form') {
                     form.classList.add('active');
@@ -31,7 +27,6 @@ function initializeTabs() {
                 }
             });
 
-            // Clear alerts and errors
             clearAlert();
             clearErrors();
         });
@@ -39,10 +34,8 @@ function initializeTabs() {
 }
 
 function initializeForms() {
-    // Login form
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 
-    // Register form
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 }
 
@@ -55,7 +48,6 @@ async function handleLogin(e) {
     const login = formData.get('login');
     const password = formData.get('password');
 
-    // Simple validation
     if (!login || !password) {
         showAlert('Моля попълнете всички полета', 'error');
         return;
@@ -95,7 +87,6 @@ async function handleRegister(e) {
         password_confirmation: formData.get('password_confirmation')
     };
 
-    // Client-side validation
     const errors = validateRegistration(data);
     if (Object.keys(errors).length > 0) {
         displayErrors(errors);
@@ -117,8 +108,7 @@ async function handleRegister(e) {
 
     } catch (error) {
         const errorMessage = error.message || 'Грешка при регистрация';
-        
-        // Check if error contains field-specific errors
+
         if (error.message.includes('username')) {
             displayErrors({ username: [error.message] });
         } else if (error.message.includes('email')) {
@@ -135,29 +125,24 @@ async function handleRegister(e) {
 function validateRegistration(data) {
     const errors = {};
 
-    // Username validation
     if (!data.username || data.username.length < 3) {
         errors.username = ['Потребителското име трябва да е поне 3 символа'];
     } else if (!/^[a-zA-Z0-9_-]+$/.test(data.username)) {
         errors.username = ['Потребителското име може да съдържа само букви, цифри, _ и -'];
     }
 
-    // Email validation
     if (!data.email || !isValidEmail(data.email)) {
         errors.email = ['Невалиден email адрес'];
     }
 
-    // Full name validation
     if (!data.full_name || data.full_name.length < 2) {
         errors.full_name = ['Пълното име е задължително'];
     }
 
-    // Password validation
     if (!data.password || data.password.length < 6) {
         errors.password = ['Паролата трябва да е поне 6 символа'];
     }
 
-    // Password confirmation
     if (data.password !== data.password_confirmation) {
         errors.password_confirmation = ['Паролите не съвпадат'];
     }

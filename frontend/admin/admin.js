@@ -1,6 +1,5 @@
-// Admin Panel Logic
+
 document.addEventListener('DOMContentLoaded', async function() {
-    // Check authentication and admin role
     if (!authService.isAuthenticated()) {
         window.location.href = '../auth/auth.html';
         return;

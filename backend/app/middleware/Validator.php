@@ -141,13 +141,21 @@ class Validator {
     
     public static function sanitize(array $data): array {
         $sanitized = [];
+
         foreach ($data as $key => $value) {
             if (is_string($value)) {
-                $sanitized[$key] = htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
+                if (in_array($key, ['password', 'password_confirmation', 'current_password', 'new_password'])) {
+                    $sanitized[$key] = trim($value);
+                } else {
+                    $sanitized[$key] = htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
+                }
             } else {
                 $sanitized[$key] = $value;
             }
         }
+
         return $sanitized;
     }
+
+
 }

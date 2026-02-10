@@ -14,7 +14,6 @@ class SlimParser {
         $order = 0;
 
         foreach ($lines as $line) {
-            // Parse presentation metadata (first occurrence)
             if (str_starts_with($line, '#presentation')) {
                 $parts = explode(' ', $line, 2);
                 if (isset($parts[1])) {
@@ -39,7 +38,6 @@ class SlimParser {
                 continue;
             }
 
-            // New slide marker
             if (str_starts_with($line, '#slide')) {
                 if ($currentSlide !== null) {
                     $slides[] = $currentSlide;
@@ -54,7 +52,6 @@ class SlimParser {
             }
 
             if ($currentSlide === null) {
-                // First slide auto-creation
                 $order++;
                 $currentSlide = [
                     'type' => 'text-only',
@@ -63,7 +60,6 @@ class SlimParser {
                 ];
             }
 
-            // Parse slide directives
             if (str_starts_with($line, '#title')) {
                 $currentSlide['data']['title'] = trim(substr($line, 6));
                 continue;
@@ -88,12 +84,10 @@ class SlimParser {
             }
         }
 
-        // Don't forget the last slide
         if ($currentSlide !== null) {
             $slides[] = $currentSlide;
         }
 
-        // Create presentation object
         $presentation = new Presentation($slug, $title, $type);
 
         foreach ($slides as $slideData) {

@@ -1,4 +1,9 @@
 <?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -41,8 +46,7 @@ try {
     $uri = strtok($uri, '?');
     
     $method = $_SERVER['REQUEST_METHOD'];
-    
-    // AUTH ROUTES
+
     if ($uri === '/api/auth/register' && $method === 'POST') {
         (new AuthController())->register();
     } elseif ($uri === '/api/auth/login' && $method === 'POST') {
@@ -56,8 +60,7 @@ try {
     } elseif ($uri === '/api/auth/password' && $method === 'PUT') {
         (new AuthController())->changePassword();
     }
-    
-    // PRESENTATION ROUTES
+
     elseif ($uri === '/api/presentations' && $method === 'GET') {
         (new PresentationController())->index();
     } elseif ($uri === '/api/generate' && $method === 'POST') {
@@ -69,8 +72,7 @@ try {
     } elseif ($uri === '/api/presentation' && $method === 'DELETE' && isset($_GET['id'])) {
         (new PresentationController())->delete($_GET['id']);
     }
-    
-    // LIKES & FAVORITES
+
     elseif ($uri === '/api/presentation/like' && $method === 'POST' && isset($_GET['id'])) {
         (new PresentationController())->toggleLike($_GET['id']);
     } elseif ($uri === '/api/presentation/favorite' && $method === 'POST' && isset($_GET['id'])) {
@@ -78,8 +80,7 @@ try {
     } elseif ($uri === '/api/favorites' && $method === 'GET') {
         (new PresentationController())->getFavorites();
     }
-    
-    // COMMENTS
+
     elseif ($uri === '/api/presentation/comments' && $method === 'GET' && isset($_GET['id'])) {
         (new PresentationController())->getComments($_GET['id']);
     } elseif ($uri === '/api/presentation/comments' && $method === 'POST' && isset($_GET['id'])) {
@@ -87,13 +88,11 @@ try {
     } elseif ($uri === '/api/comment' && $method === 'DELETE' && isset($_GET['id'])) {
         (new PresentationController())->deleteComment($_GET['id']);
     }
-    
-    // HISTORY
+
     elseif ($uri === '/api/presentation/history' && $method === 'GET' && isset($_GET['id'])) {
         (new PresentationController())->getHistory($_GET['id']);
     }
     
-    // ADMIN ROUTES
     elseif ($uri === '/api/admin/dashboard' && $method === 'GET') {
         (new AdminController())->dashboard();
     } elseif ($uri === '/api/admin/users' && $method === 'GET') {
@@ -107,8 +106,7 @@ try {
     } elseif ($uri === '/api/admin/logs' && $method === 'GET') {
         (new AdminController())->getActivityLogs();
     }
-    
-    // HEALTH CHECK
+
     elseif ($uri === '/api/health') {
         echo json_encode([
             'success' => true,
