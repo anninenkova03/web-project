@@ -1,6 +1,6 @@
 class APIService {
     constructor() {
-        this.baseURL = 'http://localhost/web-project-final/backend/public';
+        this.baseURL = 'http://localhost/web-project/backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
     }

@@ -1,4 +1,10 @@
-<?php
+<!-- <?php
+
+// DEBUG MODE - МАХНИ ПРЕДИ PRODUCTION!
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -128,4 +134,9 @@ try {
         'error' => 'Server error',
         'message' => $e->getMessage()
     ]);
-}
+} -->
+
+
+<?php
+echo "PROJECT WORKS";
+>

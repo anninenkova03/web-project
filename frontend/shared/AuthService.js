@@ -1,6 +1,6 @@
 class AuthService {
     constructor() {
-        this.baseURL = 'http://localhost/web-project-final/backend/public';
+        this.baseURL = 'http://localhost/web-project/backend/public';
         this.tokenKey = 'auth_token';
         this.userKey = 'auth_user';
     }

@@ -1,10 +1,6 @@
 <?php
 
 class AdminController {
-    
-    /**
-     * Get dashboard statistics
-     */
     public function dashboard(): void {
         try {
             Auth::requireAdmin();
