@@ -51,6 +51,7 @@ function setupEventListeners() {
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
+    document.getElementById('btn-publish').addEventListener('click', publishToDashboard);
     document.getElementById('btn-validate').addEventListener('click', handleValidate);
     document.getElementById('btn-preview').addEventListener('click', handlePreview);
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
@@ -110,26 +111,72 @@ function handleOpen() {
     fileManager.showImportDialog();
 }
 
-function handleSave() {
+async function handleSave() {
     const editor = document.getElementById('slim-editor');
     const titleInput = document.getElementById('presentation-title');
-    
+
     const content = editor.value;
     const title = titleInput.value || 'Без име';
-    
+
     if (!content.trim()) {
         alert('Няма съдържание за запазване!');
         return;
     }
-    
-    fileManager.save(content, title);
-    
-    document.getElementById('file-status').textContent = '✓';
-    document.getElementById('file-status').style.color = 'var(--success)';
-    
+
+    const saved = fileManager.save(content, title);
+
+    try {
+        const user = await authService.getCurrentUser();
+
+        await apiService.createPresentation({
+            title: title,
+            description: '',
+            presentation_type: saved.type || 'lecture',
+            content: content,
+            slides_count: saved.slideCount || 0,
+            user_id: user.id
+        });
+
+        updateStatus(`Запазена: ${title}`);
+        showStatus('Презентацията е запазена и в Dashboard', 'success');
+
+    } catch (err) {
+        console.error(err);
+        alert('Презентацията е запазена локално, но НЕ и в Dashboard');
+    }
+
     loadFileList();
-    updateStatus(`Запазена: ${title}`);
-    showStatus('Презентацията е запазена', 'success');
+}
+
+async function publishToDashboard() {
+    const editor = document.getElementById('slim-editor');
+    const titleInput = document.getElementById('presentation-title');
+
+    const content = editor.value.trim();
+    const title = titleInput.value.trim();
+
+    if (!content || !title) {
+        alert('Трябва да има заглавие и съдържание');
+        return;
+    }
+
+    try {
+        const user = await authService.getCurrentUser();
+
+        await apiService.createPresentation({
+            title: title,
+            description: '',
+            presentation_type: document.getElementById('presentation-type').value,
+            content: content,
+            slides_count: fileManager.countSlides(content),
+            user_id: user.id
+        });
+        showStatus('Презентацията е публикувана в Dashboard!', 'success');
+        alert('✅ Презентацията е публикувана в Dashboard!');
+    } catch (err) {
+        console.error(err);
+        alert('❌ Грешка при публикуване в Dashboard');
+    }
 }
 
 function handleValidate() {

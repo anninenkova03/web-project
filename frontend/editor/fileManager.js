@@ -3,7 +3,7 @@ class FileManager {
         this.currentFile = null;
         this.presentations = [];
         this.isDirty = false;
-        this.storageKey = 'slim_presentations';
+        this.storageKey = 'presentations';
         this.loadFromStorage();
         this.createFileInput();
     }
@@ -118,9 +118,11 @@ class FileManager {
     createNew(title, type = 'lecture') {
         const id = this.generateId(title);
         const template = this.getTemplate(type);
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         
         const newPresentation = {
             id: id,
+            user_id: currentUser ? currentUser.id : null,
             title: title || 'Нова презентация',
             type: type,
             content: template,
@@ -492,9 +494,11 @@ class FileManager {
     }
 
     getDefaultPresentations() {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         return [
             {
                 id: 'intro-webtech',
+                user_id: currentUser ? currentUser.id : null,
                 title: 'Въведение в Web Technologies',
                 type: 'lecture',
                 content: `#title Въведение в Web Technologies
