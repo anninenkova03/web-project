@@ -78,28 +78,24 @@
 <body>
     <h1>🔍 Web Presentations - Complete Debug Test</h1>
     
-    <!-- Test 1: Check Files -->
     <div class="test-section">
         <h2>📂 Test 1: Check if files are loaded</h2>
         <button onclick="test1()">Run Test 1</button>
         <div id="test1-result"></div>
     </div>
 
-    <!-- Test 2: Check Authentication -->
     <div class="test-section">
         <h2>🔐 Test 2: Check Authentication</h2>
         <button onclick="test2()">Run Test 2</button>
         <div id="test2-result"></div>
     </div>
 
-    <!-- Test 3: Test API Health -->
     <div class="test-section">
         <h2>💓 Test 3: API Health Check</h2>
         <button onclick="test3()">Run Test 3</button>
         <div id="test3-result"></div>
     </div>
 
-    <!-- Test 4: Test Generate with Sample SLIM -->
     <div class="test-section">
         <h2>⚙️ Test 4: Generate Presentation</h2>
         <p>Sample SLIM code (you can edit):</p>
@@ -128,14 +124,12 @@
         <div id="test4-result"></div>
     </div>
 
-    <!-- Test 5: Check Database -->
     <div class="test-section">
         <h2>💾 Test 5: Check if presentation was created in database</h2>
         <button onclick="test5()">Check Database</button>
         <div id="test5-result"></div>
     </div>
 
-    <!-- Console Log -->
     <div class="test-section">
         <h2>📋 Console Log</h2>
         <div id="console-log" class="log"></div>
@@ -144,7 +138,6 @@
     <script src="../shared/AuthService.js"></script>
     <script src="../shared/APIService.js"></script>
     <script>
-        // Override console.log to display in page
         const originalLog = console.log;
         const originalError = console.error;
         
@@ -174,7 +167,6 @@
             return div.innerHTML;
         }
 
-        // TEST 1: Check if files are loaded
         function test1() {
             const result = document.getElementById('test1-result');
             result.innerHTML = '<p>Checking...</p>';
@@ -196,7 +188,6 @@
             console.log('Test 1 complete:', checks);
         }
 
-        // TEST 2: Check Authentication
         async function test2() {
             const result = document.getElementById('test2-result');
             result.innerHTML = '<p>Checking...</p>';
@@ -233,7 +224,6 @@
             }
         }
 
-        // TEST 3: API Health Check
         async function test3() {
             const result = document.getElementById('test3-result');
             result.innerHTML = '<p>Checking...</p>';
@@ -258,7 +248,6 @@
             }
         }
 
-        // TEST 4: Generate Presentation
         async function test4() {
             const result = document.getElementById('test4-result');
             const slimCode = document.getElementById('slim-code').value;
@@ -266,7 +255,6 @@
             result.innerHTML = '<p class="warning">⏳ Generating presentation...</p>';
             
             try {
-                // Check authentication first
                 if (!authService.isAuthenticated()) {
                     throw new Error('Not authenticated! Please login first.');
                 }
@@ -275,7 +263,6 @@
                 console.log('SLIM code length:', slimCode.length);
                 console.log('First 100 chars:', slimCode.substring(0, 100));
                 
-                // Make the request
                 const response = await apiService.generatePresentation(slimCode);
                 
                 result.innerHTML = `
@@ -294,7 +281,6 @@
             }
         }
 
-        // TEST 5: Check Database
         async function test5() {
             const result = document.getElementById('test5-result');
             result.innerHTML = '<p>Checking database...</p>';
@@ -316,7 +302,6 @@
             }
         }
 
-        // Auto-run Test 1 on load
         window.addEventListener('DOMContentLoaded', () => {
             console.log('=== DEBUG TEST PAGE LOADED ===');
             console.log('Current URL:', window.location.href);

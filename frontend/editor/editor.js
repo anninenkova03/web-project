@@ -25,9 +25,6 @@ function initializeEditor() {
     initializeUI();
     setupEventListeners();
     loadFileList();
-    
-    startAutoSave();
-    
     loadLastOrCreateNew();
     
     loadTheme();
@@ -58,15 +55,11 @@ function setupEventListeners() {
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
+    document.getElementById('btn-generate').addEventListener('click', handleGenerate);
     document.getElementById('btn-validate').addEventListener('click', handleValidate);
     document.getElementById('btn-preview').addEventListener('click', handlePreview);
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     document.getElementById('btn-refresh').addEventListener('click', loadFileList);
-
-    const generateBtn = document.getElementById('btn-generate');
-    if (generateBtn) {
-        generateBtn.addEventListener('click', handleGenerate);
-    }
     
     const dashboardBtn = document.getElementById('btn-dashboard');
     if (dashboardBtn) {
@@ -99,69 +92,49 @@ function setupEventListeners() {
 
 async function handleGenerate() {
     console.log('Generate clicked!');
-    
-    const editor = document.getElementById('slim-editor');
-    const content = editor.value.trim();
 
-    if (!content) {
-        alert('❌ Няма съдържание за генериране!\n\nНапишете SLIM код в едитора.');
-        return;
-    }
+    const slimCode = document.getElementById('slim-editor').value;
 
-    if (!content.includes('#title') && !content.includes('#slide')) {
-        alert('❌ Невалиден SLIM формат!\n\nТрябва да има поне #title или #slide команди.');
+    if (!slimCode.trim()) {
+        alert('❌ Няма съдържание!');
         return;
     }
 
     try {
-        updateStatus('⏳ Генериране на презентация...');
-
-        const generateBtn = document.getElementById('btn-generate');
-        if (generateBtn) {
-            generateBtn.disabled = true;
-            generateBtn.textContent = '⏳ Генериране...';
+        if (typeof authService === 'undefined' || !authService.isAuthenticated()) {
+            throw new Error('Not authenticated! Please login first.');
         }
 
-        console.log('Sending SLIM content to API:', content.substring(0, 100) + '...');
+        console.log('Sending SLIM code to API...');
+        console.log('Length:', slimCode.length);
+        console.log('Preview:', slimCode.substring(0, 100));
 
-        const response = await apiService.generatePresentation(content);
-        
-        console.log('Generate response:', response);
+        const btn = document.getElementById('btn-generate');
+        btn.disabled = true;
+        btn.textContent = '⏳ Generating...';
 
-        const titleInput = document.getElementById('presentation-title');
-        const title = titleInput.value || 'Untitled Presentation';
-        fileManager.save(content, title);
+        const response = await apiService.generatePresentation(slimCode);
 
-        alert('✅ Презентацията е създадена успешно!\n\nМоже да я видите в Dashboard.');
+        console.log('Response:', response);
 
-        setTimeout(() => {
-            window.location.href = '../dashboard/dashboard.html';
-        }, 500);
+        alert('✅ Presentation generated successfully!');
+
+        window.location.href = '../dashboard/dashboard.html';
 
     } catch (error) {
         console.error('Generate error:', error);
-        
-        let errorMessage = '❌ Грешка при генериране на презентацията!\n\n';
-        
-        if (error.message) {
-            errorMessage += 'Детайли: ' + error.message;
-        } else {
-            errorMessage += 'Моля, проверете:\n';
-            errorMessage += '• Дали сте влезли в профила си\n';
-            errorMessage += '• Дали SLIM форматът е правилен\n';
-            errorMessage += '• Дали backend API работи';
-        }
-        
-        alert(errorMessage);
-        updateStatus('❌ Грешка при генериране');
+
+        alert(
+            '❌ Failed to generate presentation!\n\n' +
+            'Error: ' + error.message
+        );
     } finally {
-        const generateBtn = document.getElementById('btn-generate');
-        if (generateBtn) {
-            generateBtn.disabled = false;
-            generateBtn.textContent = '⚙️ Generate';
-        }
+        const btn = document.getElementById('btn-generate');
+        btn.disabled = false;
+        btn.textContent = '⚙️ Generate';
     }
 }
+
 
 function handleNew() {
     if (fileManager.hasUnsavedChanges()) {
@@ -493,7 +466,6 @@ function escapeHtml(text) {
 window.addEventListener('beforeunload', (e) => {
     if (fileManager && fileManager.hasUnsavedChanges()) {
         e.preventDefault();
-        e.returnValue = '';
         return '';
     }
 });
