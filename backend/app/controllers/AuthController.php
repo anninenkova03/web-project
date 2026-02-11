@@ -7,6 +7,10 @@ class AuthController {
             $input = file_get_contents("php://input");
             $data = json_decode($input, true);
 
+            if (!is_array($data)) {
+                $data = [];
+            }
+
             $data = Validator::sanitize($data);
 
             $validator = new Validator($data);
@@ -83,6 +87,10 @@ class AuthController {
         try {
             $input = file_get_contents("php://input");
             $data = json_decode($input, true);
+
+            if (!is_array($data)) {
+                $data = [];
+            }
 
             $data = Validator::sanitize($data);
 
@@ -193,6 +201,11 @@ class AuthController {
             
             $input = file_get_contents("php://input");
             $data = json_decode($input, true);
+            
+            if (!is_array($data)) {
+                $data = [];
+            }
+            
             $data = Validator::sanitize($data);
             
             $userId = Auth::id();
@@ -273,6 +286,11 @@ class AuthController {
             
             $input = file_get_contents("php://input");
             $data = json_decode($input, true);
+            
+            if (!is_array($data)) {
+                $data = [];
+            }
+            
             $data = Validator::sanitize($data);
 
             $validator = new Validator($data);

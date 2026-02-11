@@ -58,7 +58,7 @@ async function handleLogin(e) {
     submitBtn.textContent = 'Влизане...';
 
     try {
-        await authService.login(login, password);
+        await authService.login({login, password});
         
         showAlert('Успешен вход! Пренасочване...', 'success');
         
