@@ -2,24 +2,68 @@ class APIService {
     constructor() {
         this.baseURL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : this.detectBaseURL();
         this.tokenKey = 'auth_token'; // same as AuthService
+        this.cache = new Map();        // ✅ initialize cache
         console.log('[APIService] Base URL:', this.baseURL);
+    }
+
+    // ----- Copy the exact same detection logic from AuthService -----
+    detectBaseURL() {
+        try {
+            let scriptUrl = null;
+            if (document.currentScript) {
+                scriptUrl = document.currentScript.src;
+            } else {
+                const scripts = document.getElementsByTagName('script');
+                for (let s of scripts) {
+                    if (s.src && s.src.includes('APIService.js')) {
+                        scriptUrl = s.src;
+                        break;
+                    }
+                }
+            }
+            if (scriptUrl) {
+                const url = new URL(scriptUrl);
+                const pathParts = url.pathname.split('/').filter(p => p);
+                const frontendIndex = pathParts.indexOf('frontend');
+                if (frontendIndex !== -1) {
+                    const projectRoot = pathParts.slice(0, frontendIndex).join('/');
+                    return `${url.origin}/${projectRoot}/backend/public`.replace(/\/$/, '');
+                }
+            }
+        } catch (e) {}
+        const origin = window.location.origin;
+        let pathname = window.location.pathname;
+        const frontendPos = pathname.indexOf('/frontend');
+        if (frontendPos !== -1) {
+            const projectPath = pathname.substring(0, frontendPos);
+            return `${origin}${projectPath}/backend/public`.replace(/\/$/, '');
+        }
+        return `${origin}/backend/public`.replace(/\/$/, '');
+    }
+
+    // ✅ Get token directly from localStorage (same as AuthService)
+    getToken() {
+        return localStorage.getItem(this.tokenKey);
+    }
+
+    // ✅ Build auth header
+    getAuthHeader() {
+        const token = this.getToken();
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
     }
 
     async request(endpoint, options = {}) {
         try {
             const url = `${this.baseURL}${endpoint}`;
+            console.log('[API]', options.method || 'GET', url);
 
-            const token = this.authService?.getToken();
-
+            // ✅ Always include auth header if token exists
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                ...this.getAuthHeader(),   // <-- this is the fix
                 ...options.headers
             };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
 
             const response = await fetch(url, {
                 credentials: 'include',
@@ -29,8 +73,9 @@ class APIService {
 
             const text = await response.text();
 
+            // Detect HTML error pages (PHP errors or 404 pages)
             if (text.trim().startsWith('<')) {
-                console.error('Server returned HTML:', text);
+                console.error('[API] Server returned HTML:', text.slice(0, 300));
                 throw new Error('Backend returned HTML instead of JSON. Check server logs for PHP errors.');
             }
 
@@ -43,11 +88,12 @@ class APIService {
             return data;
 
         } catch (error) {
-            console.error('API Request Error:', error);
+            console.error('[API] Request Error:', error);
             throw error;
         }
     }
 
+    // ----- Presentation endpoints -----
     async getPresentations(filters = {}) {
         const params = new URLSearchParams(filters);
         const data = await this.request(`/api/presentations?${params}`);
@@ -92,6 +138,7 @@ class APIService {
         return await this.request('/api/favorites');
     }
 
+    // ----- Comments -----
     async getComments(presentationId) {
         return await this.request(`/api/presentation/comments?id=${presentationId}`);
     }
@@ -106,11 +153,13 @@ class APIService {
     async deleteComment(commentId) {
         return await this.request(`/api/comment?id=${commentId}`, { method: 'DELETE' });
     }
-    
+
+    // ----- History -----
     async getHistory(presentationId) {
         return await this.request(`/api/presentation/history?id=${presentationId}`);
     }
-    
+
+    // ----- Admin endpoints -----
     async getAdminDashboard() {
         return await this.request('/api/admin/dashboard');
     }
@@ -138,10 +187,12 @@ class APIService {
         return await this.request(`/api/admin/logs?page=${page}&limit=${limit}`);
     }
 
+    // ----- Cache -----
     clearCache() {
         this.cache.clear();
     }
 
+    // ----- Health check -----
     async healthCheck() {
         try {
             const response = await this.request('/api/health');
@@ -157,4 +208,4 @@ if (typeof window !== 'undefined') {
     window.APIService = APIService;
     window.apiService = apiService;
 }
-console.log('API Service loaded');
+console.log('[APIService] Loaded and initialized');
