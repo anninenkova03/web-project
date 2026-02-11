@@ -1,8 +1,20 @@
 class APIService {
     constructor() {
-        this.baseURL = '../backend/public';
+        const origin = window.location.origin;
+
+        const pathSegments = window.location.pathname.split('/');
+        const projectName = pathSegments[1];
+
+        this.baseURL = `${origin}/${projectName}/backend/public`;
+        
+        console.log('API Base URL detected as:', this.baseURL);
+        
         this.cache = new Map();
         this.cacheTimeout = 60000;
+
+        if (typeof window !== 'undefined' && window.authService) {
+            this.authService = window.authService;
+        }
     }
 
     async request(endpoint, options = {}) {
