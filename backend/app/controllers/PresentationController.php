@@ -152,7 +152,8 @@ class PresentationController {
                 return;
             }
             
-            if (!Auth::canAccess($presentation['user_id'])) {
+            // FIXED: Correct parameter passing - table name and resource ID
+            if (!Auth::canAccess('presentations', $id)) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
@@ -206,7 +207,8 @@ class PresentationController {
                 return;
             }
             
-            if (!Auth::canAccess($presentation['user_id'])) {
+            // FIXED: Correct parameter passing - table name and resource ID
+            if (!Auth::canAccess('presentations', $id)) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
@@ -402,7 +404,8 @@ class PresentationController {
                 return;
             }
             
-            if (!Auth::canAccess($comment['user_id'])) {
+            // FIXED: Correct parameter passing - table name and resource ID
+            if (!Auth::canAccess('comments', $id)) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
