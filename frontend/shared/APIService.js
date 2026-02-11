@@ -1,6 +1,5 @@
 class APIService {
     constructor() {
-        // IMPORTANT: Update this path to match your actual backend location
         this.baseURL = 'http://localhost/project/backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
@@ -10,17 +9,14 @@ class APIService {
         try {
             const url = `${this.baseURL}${endpoint}`;
             
-            // Get auth token from AuthService
             const token = authService.getToken();
             
-            // Build headers with authentication
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 ...options.headers
             };
             
-            // Add Authorization header if token exists
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
@@ -86,7 +82,6 @@ class APIService {
             
         } catch (error) {
             console.error('Error loading presentations:', error);
-            // Return empty array on error instead of throwing
             return [];
         }
     }
@@ -145,7 +140,6 @@ class APIService {
 
     async getPresentationHTML(slug) {
         try {
-            // Adjust path based on your actual structure
             const htmlURL = `${this.baseURL.replace('/public', '')}/generated/presentations/${slug}/index.html`;
             
             const response = await fetch(htmlURL);
@@ -205,7 +199,6 @@ class APIService {
         try {
             const presentation = await this.getPresentation(id);
             
-            // Convert backend format to frontend format
             const slides = presentation.slides.map((slide, index) => ({
                 id: slide.id,
                 order: slide.order,
