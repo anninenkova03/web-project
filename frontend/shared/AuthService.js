@@ -1,5 +1,7 @@
 class AuthService {
     constructor() {
+        this.baseURL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : this.detectBaseURL();
+        
         this.baseURL = this.detectBaseURL();
         this.tokenKey = 'auth_token';
         this.userKey = 'auth_user';
