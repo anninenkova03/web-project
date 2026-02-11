@@ -10,6 +10,9 @@ class PresentationController {
 
     public function index(): void {
         try {
+            // Clear any output buffer before sending JSON
+            if (ob_get_level() > 0) ob_clean();
+            
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             $limit = isset($_GET['limit']) ? min((int)$_GET['limit'], 100) : 20;
             $search = $_GET['search'] ?? '';
@@ -41,6 +44,8 @@ class PresentationController {
                 ]
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::index - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -51,10 +56,19 @@ class PresentationController {
 
     public function generate(): void {
         try {
+            // Clear any output buffer before processing
+            if (ob_get_level() > 0) ob_clean();
+            
+            error_log('PresentationController::generate - Starting...');
+            
+            // Get input
             $input = file_get_contents('php://input');
+            error_log('PresentationController::generate - Input length: ' . strlen($input));
+            
             $data = json_decode($input, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log('PresentationController::generate - JSON decode error: ' . json_last_error_msg());
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
@@ -64,6 +78,7 @@ class PresentationController {
             }
 
             if (!isset($data['slim']) || empty($data['slim'])) {
+                error_log('PresentationController::generate - Missing SLIM content');
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
@@ -72,8 +87,14 @@ class PresentationController {
                 return;
             }
 
+            error_log('PresentationController::generate - SLIM content length: ' . strlen($data['slim']));
+
+            // Check authentication
             $userId = Auth::id();
+            error_log('PresentationController::generate - User ID: ' . ($userId ?? 'null'));
+            
             if (!$userId) {
+                error_log('PresentationController::generate - User not authenticated');
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,
@@ -82,8 +103,14 @@ class PresentationController {
                 return;
             }
 
+            error_log('PresentationController::generate - Creating presentation...');
+            
+            // Create presentation
             $result = $this->service->createFromSlim($data['slim'], $userId);
+            
+            error_log('PresentationController::generate - Presentation created with ID: ' . $result['id']);
 
+            // Log activity
             ActivityLogger::log(
                 'create', 
                 'presentation', 
@@ -97,20 +124,41 @@ class PresentationController {
                 'data' => $result
             ]);
             
+            error_log('PresentationController::generate - Success!');
+            
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'error' => 'Failed to generate presentation',
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
+            if (ob_get_level() > 0) ob_clean();
+            
+            error_log('PresentationController::generate - Exception: ' . $e->getMessage());
+            error_log('PresentationController::generate - File: ' . $e->getFile());
+            error_log('PresentationController::generate - Line: ' . $e->getLine());
+            
+            // Check if it's a duplicate slug error
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false && strpos($e->getMessage(), 'slug') !== false) {
+                http_response_code(409); // Conflict
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Duplicate slug',
+                    'message' => 'A presentation with this slug already exists. Please use a different slug or delete the existing presentation.',
+                    'hint' => 'Change the #slug line in your SLIM code or remove it to auto-generate a unique slug'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Failed to generate presentation',
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]);
+            }
         }
     }
 
     public function getById(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             $presentation = $this->service->getById($id);
             
             if (!$presentation) {
@@ -129,6 +177,8 @@ class PresentationController {
                 'data' => $presentation
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::getById - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -139,6 +189,8 @@ class PresentationController {
 
     public function update(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $presentation = $this->service->getById($id);
@@ -184,6 +236,8 @@ class PresentationController {
                 'data' => $result
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::update - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -194,6 +248,8 @@ class PresentationController {
 
     public function delete(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $presentation = $this->service->getById($id);
@@ -227,6 +283,8 @@ class PresentationController {
                 'message' => 'Презентацията е изтрита'
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::delete - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -237,6 +295,8 @@ class PresentationController {
 
     public function toggleLike(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $isLiked = $this->service->toggleLike($id, Auth::id());
@@ -252,6 +312,8 @@ class PresentationController {
                 'likes_count' => $likesCount
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::toggleLike - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -262,6 +324,8 @@ class PresentationController {
 
     public function toggleFavorite(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $isFavorited = $this->service->toggleFavorite($id, Auth::id());
@@ -271,6 +335,8 @@ class PresentationController {
                 'is_favorited' => $isFavorited
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::toggleFavorite - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -281,6 +347,8 @@ class PresentationController {
 
     public function getFavorites(): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $db = Database::get();
@@ -306,6 +374,8 @@ class PresentationController {
                 'data' => $favorites
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::getFavorites - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -316,6 +386,8 @@ class PresentationController {
 
     public function getComments(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             $db = Database::get();
             $stmt = $db->prepare("
                 SELECT c.*, u.username, u.full_name
@@ -332,6 +404,8 @@ class PresentationController {
                 'data' => $comments
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::getComments - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -342,6 +416,8 @@ class PresentationController {
 
     public function addComment(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $data = json_decode(file_get_contents('php://input'), true);
@@ -378,6 +454,8 @@ class PresentationController {
                 'data' => ['id' => $commentId]
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::addComment - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -388,6 +466,8 @@ class PresentationController {
 
     public function deleteComment(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             Auth::require();
             
             $db = Database::get();
@@ -424,6 +504,8 @@ class PresentationController {
                 'message' => 'Коментарът е изтрит'
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::deleteComment - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,
@@ -434,6 +516,8 @@ class PresentationController {
 
     public function getHistory(int $id): void {
         try {
+            if (ob_get_level() > 0) ob_clean();
+            
             $db = Database::get();
             $stmt = $db->prepare("
                 SELECT ph.*, u.username
@@ -450,6 +534,8 @@ class PresentationController {
                 'data' => $history
             ]);
         } catch (Exception $e) {
+            if (ob_get_level() > 0) ob_clean();
+            error_log('PresentationController::getHistory - ' . $e->getMessage());
             http_response_code(500);
             echo json_encode([
                 'success' => false,

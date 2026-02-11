@@ -1,8 +1,70 @@
 <?php
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// CRITICAL: Suppress ALL output before we can send JSON header
+ob_start();
+
+// CRITICAL: Set JSON header FIRST before anything else can output HTML
+header('Content-Type: application/json; charset=utf-8');
+
+// Disable ALL error display - we'll catch them and return as JSON
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
+
+// Set up error handler to catch ALL errors and return JSON
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    // Clear any buffered output
+    if (ob_get_level() > 0) ob_clean();
+    
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'PHP Error',
+        'message' => $errstr,
+        'file' => $errfile,
+        'line' => $errline,
+        'type' => $errno
+    ]);
+    exit;
+});
+
+// Set up exception handler to catch ALL exceptions and return JSON
+set_exception_handler(function($exception) {
+    // Clear any buffered output
+    if (ob_get_level() > 0) ob_clean();
+    
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Exception',
+        'message' => $exception->getMessage(),
+        'file' => $exception->getFile(),
+        'line' => $exception->getLine()
+    ]);
+    exit;
+});
+
+// Set up shutdown function to catch fatal errors and return JSON
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Clear any buffered output
+        if (ob_get_level() > 0) ob_clean();
+        
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Fatal Error',
+            'message' => $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line']
+        ]);
+    } else {
+        // Flush the output buffer if no error
+        if (ob_get_level() > 0) ob_end_flush();
+    }
+});
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
@@ -13,7 +75,6 @@ if ($origin) {
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -43,7 +104,12 @@ spl_autoload_register(function ($class) {
 });
 
 require_once __DIR__ . '/../config/database.php';
-Auth::cleanExpiredSessions();
+
+try {
+    Auth::cleanExpiredSessions();
+} catch (Exception $e) {
+    // Continue even if session cleanup fails
+}
 
 try {
     $requestUri = $_SERVER['REQUEST_URI'];
@@ -114,6 +180,9 @@ try {
     }
 
     elseif ($uri === '/api/health') {
+        // Clear buffer before sending JSON
+        if (ob_get_level() > 0) ob_clean();
+        
         echo json_encode([
             'success' => true,
             'message' => 'API is running',
@@ -122,14 +191,28 @@ try {
     }
     
     else {
+        // Clear buffer before sending JSON
+        if (ob_get_level() > 0) ob_clean();
+        
         http_response_code(404);
-        echo json_encode(['error' => 'Endpoint not found']);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Endpoint not found',
+            'uri' => $uri,
+            'method' => $method
+        ]);
     }
     
 } catch (Exception $e) {
+    // Clear buffer before sending JSON
+    if (ob_get_level() > 0) ob_clean();
+    
     http_response_code(500);
     echo json_encode([
+        'success' => false,
         'error' => 'Server error',
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
     ]);
 }
