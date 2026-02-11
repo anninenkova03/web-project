@@ -10,7 +10,6 @@ class PresentationController {
 
     public function index(): void {
         try {
-            // Clear any output buffer before sending JSON
             if (ob_get_level() > 0) ob_clean();
             
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -56,12 +55,10 @@ class PresentationController {
 
     public function generate(): void {
         try {
-            // Clear any output buffer before processing
             if (ob_get_level() > 0) ob_clean();
             
             error_log('PresentationController::generate - Starting...');
-            
-            // Get input
+
             $input = file_get_contents('php://input');
             error_log('PresentationController::generate - Input length: ' . strlen($input));
             
@@ -89,7 +86,6 @@ class PresentationController {
 
             error_log('PresentationController::generate - SLIM content length: ' . strlen($data['slim']));
 
-            // Check authentication
             $userId = Auth::id();
             error_log('PresentationController::generate - User ID: ' . ($userId ?? 'null'));
             
@@ -104,13 +100,11 @@ class PresentationController {
             }
 
             error_log('PresentationController::generate - Creating presentation...');
-            
-            // Create presentation
+
             $result = $this->service->createFromSlim($data['slim'], $userId);
             
             error_log('PresentationController::generate - Presentation created with ID: ' . $result['id']);
 
-            // Log activity
             ActivityLogger::log(
                 'create', 
                 'presentation', 
@@ -132,10 +126,9 @@ class PresentationController {
             error_log('PresentationController::generate - Exception: ' . $e->getMessage());
             error_log('PresentationController::generate - File: ' . $e->getFile());
             error_log('PresentationController::generate - Line: ' . $e->getLine());
-            
-            // Check if it's a duplicate slug error
+
             if (strpos($e->getMessage(), 'Duplicate entry') !== false && strpos($e->getMessage(), 'slug') !== false) {
-                http_response_code(409); // Conflict
+                http_response_code(409);
                 echo json_encode([
                     'success' => false,
                     'error' => 'Duplicate slug',
@@ -203,8 +196,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // FIXED: Correct parameter passing - table name and resource ID
+
             if (!Auth::canAccess('presentations', $id)) {
                 http_response_code(403);
                 echo json_encode([
@@ -262,8 +254,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // FIXED: Correct parameter passing - table name and resource ID
+
             if (!Auth::canAccess('presentations', $id)) {
                 http_response_code(403);
                 echo json_encode([
@@ -483,8 +474,7 @@ class PresentationController {
                 ]);
                 return;
             }
-            
-            // FIXED: Correct parameter passing - table name and resource ID
+
             if (!Auth::canAccess('comments', $id)) {
                 http_response_code(403);
                 echo json_encode([

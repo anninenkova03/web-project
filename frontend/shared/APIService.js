@@ -3,8 +3,7 @@ class APIService {
         this.baseURL = 'http://localhost/web-project/backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
-        
-        // Ensure we have reference to authService
+
         if (typeof window !== 'undefined' && window.authService) {
             this.authService = window.authService;
         }
@@ -13,11 +12,9 @@ class APIService {
     async request(endpoint, options = {}) {
         try {
             const url = `${this.baseURL}${endpoint}`;
-            
-            // Get auth token
+
             const token = this.authService?.getToken();
 
-            // Build headers with authentication
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',

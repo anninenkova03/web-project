@@ -1,20 +1,15 @@
 <?php
 
-// CRITICAL: Suppress ALL output before we can send JSON header
 ob_start();
 
-// CRITICAL: Set JSON header FIRST before anything else can output HTML
 header('Content-Type: application/json; charset=utf-8');
 
-// Disable ALL error display - we'll catch them and return as JSON
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
-// Set up error handler to catch ALL errors and return JSON
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    // Clear any buffered output
     if (ob_get_level() > 0) ob_clean();
     
     http_response_code(500);
@@ -29,9 +24,7 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
     exit;
 });
 
-// Set up exception handler to catch ALL exceptions and return JSON
 set_exception_handler(function($exception) {
-    // Clear any buffered output
     if (ob_get_level() > 0) ob_clean();
     
     http_response_code(500);
@@ -45,11 +38,9 @@ set_exception_handler(function($exception) {
     exit;
 });
 
-// Set up shutdown function to catch fatal errors and return JSON
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        // Clear any buffered output
         if (ob_get_level() > 0) ob_clean();
         
         http_response_code(500);
@@ -61,7 +52,6 @@ register_shutdown_function(function() {
             'line' => $error['line']
         ]);
     } else {
-        // Flush the output buffer if no error
         if (ob_get_level() > 0) ob_end_flush();
     }
 });
@@ -108,7 +98,6 @@ require_once __DIR__ . '/../config/database.php';
 try {
     Auth::cleanExpiredSessions();
 } catch (Exception $e) {
-    // Continue even if session cleanup fails
 }
 
 try {
@@ -180,7 +169,6 @@ try {
     }
 
     elseif ($uri === '/api/health') {
-        // Clear buffer before sending JSON
         if (ob_get_level() > 0) ob_clean();
         
         echo json_encode([
@@ -191,7 +179,6 @@ try {
     }
     
     else {
-        // Clear buffer before sending JSON
         if (ob_get_level() > 0) ob_clean();
         
         http_response_code(404);
@@ -204,7 +191,6 @@ try {
     }
     
 } catch (Exception $e) {
-    // Clear buffer before sending JSON
     if (ob_get_level() > 0) ob_clean();
     
     http_response_code(500);

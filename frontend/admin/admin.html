@@ -317,7 +317,6 @@
         let currentUser = null;
         let currentUsersPage = 1;
 
-        // Check admin access
         document.addEventListener('DOMContentLoaded', async function() {
             if (!authService.isAuthenticated()) {
                 window.location.href = '../auth/auth.html';
@@ -339,17 +338,13 @@
 
         async function loadDashboardData() {
             try {
-                // Load statistics
                 const stats = await apiService.getAdminDashboard();
                 updateStatistics(stats);
 
-                // Load users
                 await loadUsers();
 
-                // Load popular presentations
                 await loadPopularPresentations(stats);
 
-                // Load recent activity
                 await loadRecentActivity(stats);
             } catch (error) {
                 console.error('Error loading admin data:', error);

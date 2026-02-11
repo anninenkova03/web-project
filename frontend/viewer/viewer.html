@@ -77,14 +77,11 @@
     <script type="module" src="../presentationBridge.js"></script>
     <script type="module" src="viewer.js"></script>
     <script>
-        // Comments functionality
         let presentationId = null;
         let currentUser = null;
         let replyToCommentId = null;
 
-        // Initialize on load
         document.addEventListener('DOMContentLoaded', async function() {
-            // Get presentation ID from URL
             const urlParams = new URLSearchParams(window.location.search);
             presentationId = urlParams.get('id');
 
@@ -93,19 +90,15 @@
                 return;
             }
 
-            // Check if user is logged in
             if (authService.isAuthenticated()) {
                 currentUser = await authService.getCurrentUser();
                 document.getElementById('commentForm').style.display = 'block';
                 
-                // Check if user can edit this presentation
                 checkEditPermissions();
             }
 
-            // Load comments
             await loadComments();
 
-            // Setup comment submission
             document.getElementById('submitCommentBtn').addEventListener('click', submitComment);
             document.getElementById('cancelReplyBtn').addEventListener('click', cancelReply);
         });
@@ -141,7 +134,6 @@
                 return;
             }
 
-            // Separate parent comments and replies
             const parentComments = comments.filter(c => !c.parent_comment_id);
             const replies = comments.filter(c => c.parent_comment_id);
 
@@ -149,8 +141,7 @@
             
             parentComments.forEach(comment => {
                 html += renderComment(comment);
-                
-                // Add replies
+
                 const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
                 commentReplies.forEach(reply => {
                     html += renderComment(reply, true);
@@ -198,14 +189,11 @@
 
                 await apiService.addComment(presentationId, content, replyToCommentId);
                 
-                // Clear form
                 document.getElementById('commentInput').value = '';
                 cancelReply();
                 
-                // Reload comments
                 await loadComments();
                 
-                // Scroll to comments section
                 document.getElementById('commentsSection').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('Error submitting comment:', error);
