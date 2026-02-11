@@ -21,11 +21,6 @@ class APIService {
 
             const text = await response.text();
 
-            // if (text.trim().startsWith('<')) {
-            //     console.error('Server returned HTML:', text);
-            //     throw new Error('Backend returned HTML instead of JSON.');
-            // }
-
             const data = JSON.parse(text);
 
             if (!response.ok) {
