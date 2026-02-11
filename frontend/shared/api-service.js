@@ -1,28 +1,39 @@
 class APIService {
     constructor() {
-        this.baseURL = '../backend/public/index.php';
+        this.baseURL = '../backend/public';
         this.cache = new Map();
         this.cacheTimeout = 60000;
     }
 
     async request(endpoint, options = {}) {
         try {
-            const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint}`;
-            
+            const url = `${this.baseURL}${endpoint}`;
+
             const response = await fetch(url, {
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     ...options.headers
                 },
                 ...options
             });
 
+            const text = await response.text();
+
+            // if (text.trim().startsWith('<')) {
+            //     console.error('Server returned HTML:', text);
+            //     throw new Error('Backend returned HTML instead of JSON.');
+            // }
+
+            const data = JSON.parse(text);
+
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(data.error || `HTTP ${response.status}`);
             }
 
-            return await response.json();
-            
+            return data;
+
         } catch (error) {
             console.error('API Request Error:', error);
             throw error;
@@ -68,25 +79,12 @@ class APIService {
     }
 
     async generatePresentation(slimContent) {
-        try {
-            const response = await this.request('/api/generate', {
-                method: 'POST',
-                body: JSON.stringify({
-                    slim: slimContent
-                })
-            });
-
-            console.log('Presentation generated:', response);
-            
-            this.clearCache();
-            
-            return response;
-            
-        } catch (error) {
-            console.error('Error generating presentation:', error);
-            throw error;
-        }
+        return await this.request('/api/generate', {
+            method: 'POST',
+            body: JSON.stringify({ slim: slimContent })
+        });
     }
+
 
     async getPresentation(id) {
         const cacheKey = `presentation-${id}`;

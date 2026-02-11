@@ -51,36 +51,60 @@ class PresentationController {
 
     public function generate(): void {
         try {
-            Auth::require();
-            
-            $input = file_get_contents("php://input");
+            $input = file_get_contents('php://input');
             $data = json_decode($input, true);
-            
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Invalid JSON: ' . json_last_error_msg()
+                ]);
+                return;
+            }
+
             if (!isset($data['slim']) || empty($data['slim'])) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Липсва SLIM съдържание'
+                    'error' => 'Missing or empty SLIM content'
                 ]);
                 return;
             }
-            
+
             $userId = Auth::id();
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Unauthorized - Please login first'
+                ]);
+                return;
+            }
+
             $result = $this->service->createFromSlim($data['slim'], $userId);
-            
-            ActivityLogger::log('create', 'presentation', $result['id'], 
-                'Created presentation: ' . $result['title']);
-            
+
+            ActivityLogger::log(
+                'create', 
+                'presentation', 
+                $result['id'], 
+                'Created presentation: ' . $result['title']
+            );
+
             echo json_encode([
                 'success' => true,
-                'message' => 'Презентацията е създадена успешно',
+                'message' => 'Presentation created successfully',
                 'data' => $result
             ]);
+            
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Failed to generate presentation',
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
         }
     }
@@ -98,22 +122,8 @@ class PresentationController {
                 return;
             }
 
-            if (!$presentation['is_public'] && !Auth::canAccess('presentations', $id)) {
-                http_response_code(403);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Нямате достъп до тази презентация'
-                ]);
-                return;
-            }
-
             $this->service->incrementViewCount($id, Auth::id());
 
-            if (Auth::check()) {
-                $presentation['is_liked'] = $this->service->isLikedByUser($id, Auth::id());
-                $presentation['is_favorited'] = $this->service->isFavoritedByUser($id, Auth::id());
-            }
-            
             echo json_encode([
                 'success' => true,
                 'data' => $presentation
@@ -126,24 +136,34 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function update(int $id): void {
         try {
             Auth::require();
             
-            if (!Auth::canAccess('presentations', $id)) {
-                http_response_code(403);
+            $presentation = $this->service->getById($id);
+            
+            if (!$presentation) {
+                http_response_code(404);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Нямате права да редактирате тази презентация'
+                    'error' => 'Презентацията не е намерена'
                 ]);
                 return;
             }
             
-            $input = file_get_contents("php://input");
-            $data = json_decode($input, true);
+            if (!Auth::canAccess($presentation['user_id'])) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Нямате права за редакция'
+                ]);
+                return;
+            }
             
-            if (!isset($data['slim']) || empty($data['slim'])) {
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($data['slim'])) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
@@ -154,21 +174,12 @@ class PresentationController {
             
             $result = $this->service->updateFromSlim($id, $data['slim']);
             
-            if (!$result) {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Презентацията не е намерена'
-                ]);
-                return;
-            }
-
             ActivityLogger::log('update', 'presentation', $id, 
                 'Updated presentation: ' . $result['title']);
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Презентацията е обновена успешно',
+                'message' => 'Презентацията е обновена',
                 'data' => $result
             ]);
         } catch (Exception $e) {
@@ -184,18 +195,9 @@ class PresentationController {
         try {
             Auth::require();
             
-            if (!Auth::canAccess('presentations', $id)) {
-                http_response_code(403);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Нямате права да изтриете тази презентация'
-                ]);
-                return;
-            }
+            $presentation = $this->service->getById($id);
             
-            $result = $this->service->delete($id);
-            
-            if (!$result) {
+            if (!$presentation) {
                 http_response_code(404);
                 echo json_encode([
                     'success' => false,
@@ -203,12 +205,24 @@ class PresentationController {
                 ]);
                 return;
             }
-
-            ActivityLogger::log('delete', 'presentation', $id, 'Deleted presentation');
+            
+            if (!Auth::canAccess($presentation['user_id'])) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Нямате права за изтриване'
+                ]);
+                return;
+            }
+            
+            $this->service->delete($id);
+            
+            ActivityLogger::log('delete', 'presentation', $id, 
+                'Deleted presentation: ' . $presentation['title']);
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Презентацията е изтрита успешно'
+                'message' => 'Презентацията е изтрита'
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -218,19 +232,22 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function toggleLike(int $id): void {
         try {
             Auth::require();
             
-            $result = $this->service->toggleLike($id, Auth::id());
+            $isLiked = $this->service->toggleLike($id, Auth::id());
+            
+            $db = Database::get();
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM presentation_likes WHERE presentation_id = ?");
+            $stmt->execute([$id]);
+            $likesCount = $stmt->fetch()['count'];
             
             echo json_encode([
                 'success' => true,
-                'data' => [
-                    'is_liked' => $result,
-                    'likes_count' => $this->service->getLikesCount($id)
-                ]
+                'is_liked' => $isLiked,
+                'likes_count' => $likesCount
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -240,18 +257,16 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function toggleFavorite(int $id): void {
         try {
             Auth::require();
             
-            $result = $this->service->toggleFavorite($id, Auth::id());
+            $isFavorited = $this->service->toggleFavorite($id, Auth::id());
             
             echo json_encode([
                 'success' => true,
-                'data' => [
-                    'is_favorited' => $result
-                ]
+                'is_favorited' => $isFavorited
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -261,12 +276,28 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function getFavorites(): void {
         try {
             Auth::require();
             
-            $favorites = $this->service->getUserFavorites(Auth::id());
+            $db = Database::get();
+            $stmt = $db->prepare("
+                SELECT p.*, u.username, u.full_name,
+                       COUNT(DISTINCT pl.id) AS likes_count,
+                       COUNT(DISTINCT c.id) AS comments_count,
+                       1 AS is_favorited
+                FROM presentation_favorites pf
+                JOIN presentations p ON pf.presentation_id = p.id
+                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN presentation_likes pl ON p.id = pl.presentation_id
+                LEFT JOIN comments c ON p.id = c.presentation_id AND c.is_deleted = FALSE
+                WHERE pf.user_id = ?
+                GROUP BY p.id
+                ORDER BY pf.created_at DESC
+            ");
+            $stmt->execute([Auth::id()]);
+            $favorites = $stmt->fetchAll();
             
             echo json_encode([
                 'success' => true,
@@ -280,10 +311,19 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function getComments(int $id): void {
         try {
-            $comments = $this->service->getComments($id);
+            $db = Database::get();
+            $stmt = $db->prepare("
+                SELECT c.*, u.username, u.full_name
+                FROM comments c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.presentation_id = ? AND c.is_deleted = FALSE
+                ORDER BY c.created_at ASC
+            ");
+            $stmt->execute([$id]);
+            $comments = $stmt->fetchAll();
             
             echo json_encode([
                 'success' => true,
@@ -297,38 +337,43 @@ class PresentationController {
             ]);
         }
     }
-    
+
     public function addComment(int $id): void {
         try {
             Auth::require();
             
-            $input = file_get_contents("php://input");
-            $data = json_decode($input, true);
+            $data = json_decode(file_get_contents('php://input'), true);
             
-            $validator = new Validator($data);
-            $validator->required('comment', 'Коментарът е задължителен')
-                     ->min('comment', 3, 'Коментарът трябва да е поне 3 символа');
-            
-            if ($validator->fails()) {
+            if (!isset($data['comment']) || empty(trim($data['comment']))) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'error' => 'Коментарът не може да бъде празен'
                 ]);
                 return;
             }
             
-            $comment = $this->service->addComment(
-                $id, 
-                Auth::id(), 
-                $data['comment'],
-                $data['parent_comment_id'] ?? null
-            );
+            $db = Database::get();
+            $stmt = $db->prepare("
+                INSERT INTO comments (user_id, presentation_id, parent_comment_id, comment)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                Auth::id(),
+                $id,
+                $data['parent_comment_id'] ?? null,
+                trim($data['comment'])
+            ]);
+            
+            $commentId = $db->lastInsertId();
+            
+            ActivityLogger::log('create', 'comment', $commentId, 
+                'Added comment on presentation ' . $id);
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Коментарът е добавен успешно',
-                'data' => $comment
+                'message' => 'Коментарът е добавен',
+                'data' => ['id' => $commentId]
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -338,14 +383,14 @@ class PresentationController {
             ]);
         }
     }
-    
-    public function deleteComment(int $commentId): void {
+
+    public function deleteComment(int $id): void {
         try {
             Auth::require();
             
             $db = Database::get();
             $stmt = $db->prepare("SELECT user_id FROM comments WHERE id = ?");
-            $stmt->execute([$commentId]);
+            $stmt->execute([$id]);
             $comment = $stmt->fetch();
             
             if (!$comment) {
@@ -357,20 +402,23 @@ class PresentationController {
                 return;
             }
             
-            if ($comment['user_id'] !== Auth::id() && !Auth::isAdmin()) {
+            if (!Auth::canAccess($comment['user_id'])) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Нямате права да изтриете този коментар'
+                    'error' => 'Нямате права за изтриване'
                 ]);
                 return;
             }
             
-            $this->service->deleteComment($commentId);
+            $stmt = $db->prepare("UPDATE comments SET is_deleted = TRUE WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            ActivityLogger::log('delete', 'comment', $id, 'Deleted comment');
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Коментарът е изтрит успешно'
+                'message' => 'Коментарът е изтрит'
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -383,18 +431,16 @@ class PresentationController {
 
     public function getHistory(int $id): void {
         try {
-            Auth::require();
-            
-            if (!Auth::canAccess('presentations', $id)) {
-                http_response_code(403);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Нямате достъп до историята на тази презентация'
-                ]);
-                return;
-            }
-            
-            $history = ActivityLogger::getEntityActivity('presentation', $id);
+            $db = Database::get();
+            $stmt = $db->prepare("
+                SELECT ph.*, u.username
+                FROM presentation_history ph
+                JOIN users u ON ph.user_id = u.id
+                WHERE ph.presentation_id = ?
+                ORDER BY ph.created_at DESC
+            ");
+            $stmt->execute([$id]);
+            $history = $stmt->fetchAll();
             
             echo json_encode([
                 'success' => true,
@@ -409,3 +455,5 @@ class PresentationController {
         }
     }
 }
+
+?>

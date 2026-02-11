@@ -5,6 +5,13 @@ let currentTheme = 'light';
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Editor initialization...');
+
+    if (!authService || !authService.isAuthenticated()) {
+        alert('Трябва да влезете в профила си');
+        window.location.href = '../auth/auth.html';
+        return;
+    }
+    
     initializeEditor();
 });
 
@@ -32,10 +39,10 @@ function initializeEditor() {
 function initializeUI() {
     const typeSelect = document.getElementById('presentation-type');
     const types = [
-        { value: 'lecture', label: 'Лекция' },
-        { value: 'tutorial', label: 'Упражнение' },
-        { value: 'project', label: 'Проект' },
-        { value: 'demo', label: 'Демо' }
+        { value: 'lecture', label: '📚 Лекция' },
+        { value: 'tutorial', label: '🎓 Упражнение' },
+        { value: 'project', label: '💼 Проект' },
+        { value: 'demo', label: '🎬 Демо' }
     ];
     
     typeSelect.innerHTML = '';
@@ -51,11 +58,15 @@ function setupEventListeners() {
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
-    document.getElementById('btn-publish').addEventListener('click', publishToDashboard);
     document.getElementById('btn-validate').addEventListener('click', handleValidate);
     document.getElementById('btn-preview').addEventListener('click', handlePreview);
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     document.getElementById('btn-refresh').addEventListener('click', loadFileList);
+
+    const generateBtn = document.getElementById('btn-generate');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', handleGenerate);
+    }
     
     const dashboardBtn = document.getElementById('btn-dashboard');
     if (dashboardBtn) {
@@ -66,8 +77,6 @@ function setupEventListeners() {
     
     const editor = document.getElementById('slim-editor');
     editor.addEventListener('input', handleEditorChange);
-    editor.addEventListener('keyup', updateCursorPosition);
-    editor.addEventListener('click', updateCursorPosition);
     
     document.getElementById('presentation-title').addEventListener('input', handleTitleChange);
     
@@ -86,6 +95,72 @@ function setupEventListeners() {
     });
     
     document.addEventListener('keydown', handleKeyboardShortcuts);
+}
+
+async function handleGenerate() {
+    console.log('Generate clicked!');
+    
+    const editor = document.getElementById('slim-editor');
+    const content = editor.value.trim();
+
+    if (!content) {
+        alert('❌ Няма съдържание за генериране!\n\nНапишете SLIM код в едитора.');
+        return;
+    }
+
+    if (!content.includes('#title') && !content.includes('#slide')) {
+        alert('❌ Невалиден SLIM формат!\n\nТрябва да има поне #title или #slide команди.');
+        return;
+    }
+
+    try {
+        updateStatus('⏳ Генериране на презентация...');
+
+        const generateBtn = document.getElementById('btn-generate');
+        if (generateBtn) {
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Генериране...';
+        }
+
+        console.log('Sending SLIM content to API:', content.substring(0, 100) + '...');
+
+        const response = await apiService.generatePresentation(content);
+        
+        console.log('Generate response:', response);
+
+        const titleInput = document.getElementById('presentation-title');
+        const title = titleInput.value || 'Untitled Presentation';
+        fileManager.save(content, title);
+
+        alert('✅ Презентацията е създадена успешно!\n\nМоже да я видите в Dashboard.');
+
+        setTimeout(() => {
+            window.location.href = '../dashboard/dashboard.html';
+        }, 500);
+
+    } catch (error) {
+        console.error('Generate error:', error);
+        
+        let errorMessage = '❌ Грешка при генериране на презентацията!\n\n';
+        
+        if (error.message) {
+            errorMessage += 'Детайли: ' + error.message;
+        } else {
+            errorMessage += 'Моля, проверете:\n';
+            errorMessage += '• Дали сте влезли в профила си\n';
+            errorMessage += '• Дали SLIM форматът е правилен\n';
+            errorMessage += '• Дали backend API работи';
+        }
+        
+        alert(errorMessage);
+        updateStatus('❌ Грешка при генериране');
+    } finally {
+        const generateBtn = document.getElementById('btn-generate');
+        if (generateBtn) {
+            generateBtn.disabled = false;
+            generateBtn.textContent = '⚙️ Generate';
+        }
+    }
 }
 
 function handleNew() {
@@ -123,60 +198,11 @@ async function handleSave() {
         return;
     }
 
-    const saved = fileManager.save(content, title);
-
-    try {
-        const user = await authService.getCurrentUser();
-
-        await apiService.createPresentation({
-            title: title,
-            description: '',
-            presentation_type: saved.type || 'lecture',
-            content: content,
-            slides_count: saved.slideCount || 0,
-            user_id: user.id
-        });
-
-        updateStatus(`Запазена: ${title}`);
-        showStatus('Презентацията е запазена и в Dashboard', 'success');
-
-    } catch (err) {
-        console.error(err);
-        alert('Презентацията е запазена локално, но НЕ и в Dashboard');
-    }
-
+    fileManager.save(content, title);
+    updateStatus(`💾 Запазена локално: ${title}`);
+    showStatus('Презентацията е запазена локално. Натиснете "Generate" за да я публикувате в Dashboard.', 'info');
+    
     loadFileList();
-}
-
-async function publishToDashboard() {
-    const editor = document.getElementById('slim-editor');
-    const titleInput = document.getElementById('presentation-title');
-
-    const content = editor.value.trim();
-    const title = titleInput.value.trim();
-
-    if (!content || !title) {
-        alert('Трябва да има заглавие и съдържание');
-        return;
-    }
-
-    try {
-        const user = await authService.getCurrentUser();
-
-        await apiService.createPresentation({
-            title: title,
-            description: '',
-            presentation_type: document.getElementById('presentation-type').value,
-            content: content,
-            slides_count: fileManager.countSlides(content),
-            user_id: user.id
-        });
-        showStatus('Презентацията е публикувана в Dashboard!', 'success');
-        alert('✅ Презентацията е публикувана в Dashboard!');
-    } catch (err) {
-        console.error(err);
-        alert('❌ Грешка при публикуване в Dashboard');
-    }
 }
 
 function handleValidate() {
@@ -196,11 +222,32 @@ function handleValidate() {
     try {
         const result = validator.validate(content);
         displayValidationResults(result);
-        updateStatus(result.isValid ? 'Валидна презентация' : 'Има грешки');
+        updateStatus(result.isValid ? '✅ Валидна презентация' : '❌ Има грешки');
     } catch (error) {
-        console.error('Грешка при валидация:', error);
+        console.error('Validation error:', error);
         alert('Грешка при валидация: ' + error.message);
     }
+}
+
+function displayValidationResults(result) {
+    let message = result.isValid 
+        ? '✅ Презентацията е валидна!\n\n' 
+        : '❌ Намерени грешки:\n\n';
+    
+    if (!result.isValid && result.errors && result.errors.length > 0) {
+        result.errors.forEach((error, index) => {
+            message += `${index + 1}. ${error}\n`;
+        });
+    }
+    
+    if (result.warnings && result.warnings.length > 0) {
+        message += '\n⚠️ Предупреждения:\n\n';
+        result.warnings.forEach((warning, index) => {
+            message += `${index + 1}. ${warning}\n`;
+        });
+    }
+    
+    alert(message);
 }
 
 function handlePreview() {
@@ -212,370 +259,169 @@ function handlePreview() {
         return;
     }
     
-    const slides = parseSlimContent(content);
-    const modal = document.getElementById('preview-modal');
-    const previewContent = document.getElementById('preview-content');
-    
-    previewContent.innerHTML = generatePreviewHTML(slides);
-    modal.classList.add('active');
-    
-    updateStatus('Преглед на презентация');
+    try {
+        const previewContent = document.getElementById('preview-content');
+        previewContent.textContent = content;
+        
+        document.getElementById('preview-modal').classList.add('show');
+        updateStatus('Преглед');
+    } catch (error) {
+        console.error('Preview error:', error);
+        alert('Грешка при преглед: ' + error.message);
+    }
 }
 
 function closePreview() {
-    const modal = document.getElementById('preview-modal');
-    modal.classList.remove('active');
+    document.getElementById('preview-modal').classList.remove('show');
 }
 
 function handleEditorChange() {
     const editor = document.getElementById('slim-editor');
     const content = editor.value;
     
-    document.getElementById('char-count').textContent = `${content.length} символа`;
+    updateCharCount(content.length);
     
-    const slideCount = fileManager.countSlides(content);
-    document.getElementById('slide-count').textContent = slideCount;
-    
-    const lineCount = content.split('\n').length;
-    document.getElementById('line-count').textContent = lineCount;
-    
-    fileManager.markDirty();
-    document.getElementById('file-status').textContent = '●';
-    document.getElementById('file-status').style.color = 'var(--warning)';
+    fileManager.markAsUnsaved();
+    updateFileStatus();
 }
 
 function handleTitleChange() {
-    fileManager.markDirty();
+    fileManager.markAsUnsaved();
+    updateFileStatus();
 }
 
-function handleTypeChange(e) {
-    const currentFile = fileManager.getCurrentFile();
-    if (currentFile) {
-        currentFile.type = e.target.value;
-        document.getElementById('current-type').textContent = e.target.value;
+function handleTypeChange() {
+    const type = document.getElementById('presentation-type').value;
+    if (fileManager.currentFile) {
+        fileManager.currentFile.type = type;
+        fileManager.markAsUnsaved();
+        updateFileStatus();
     }
 }
 
-function updateCursorPosition() {
-    const editor = document.getElementById('slim-editor');
-    const text = editor.value.substring(0, editor.selectionStart);
-    const lines = text.split('\n');
-    const row = lines.length;
-    const col = lines[lines.length - 1].length + 1;
+function loadPresentationInEditor(presentation) {
+    document.getElementById('slim-editor').value = presentation.content || '';
+    document.getElementById('presentation-title').value = presentation.title || '';
+    document.getElementById('presentation-type').value = presentation.type || 'lecture';
     
-    document.getElementById('cursor-position').textContent = `Ред: ${row}, Кол: ${col}`;
+    updateCharCount((presentation.content || '').length);
+    fileManager.markAsSaved();
+    updateFileStatus();
 }
 
 function loadFileList() {
     const fileList = document.getElementById('file-list');
-    const presentations = fileManager.sortByDate();
+    const presentations = fileManager.getAll();
     
     if (presentations.length === 0) {
-        fileList.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-                <p>Няма презентации</p>
-                <small>Създайте нова или импортирайте файл</small>
-            </div>
-        `;
+        fileList.innerHTML = '<div class="empty-state">Няма запазени презентации</div>';
         return;
     }
     
-    fileList.innerHTML = presentations.map(p => {
-        const isActive = p.id === fileManager.getCurrentFile()?.id;
-        return `
-            <div class="file-item ${isActive ? 'active' : ''}" 
-                 data-id="${p.id}"
-                 onclick="loadPresentation('${p.id}')"
-                 oncontextmenu="showContextMenu(event, '${p.id}'); return false;">
-                <div class="file-name">${escapeHtml(p.title)}</div>
+    fileList.innerHTML = presentations.map(p => `
+        <div class="file-item" data-id="${p.id}">
+            <div class="file-info">
+                <div class="file-title">${escapeHtml(p.title)}</div>
                 <div class="file-meta">
-                    ${p.slideCount} слайда • ${p.type}
+                    ${p.slideCount || 0} слайда • ${p.type || 'lecture'}
                     <br>
-                    <small>${formatDate(p.lastModified)}</small>
+                    <small>Преди ${formatTimeAgo(p.lastModified)}</small>
                 </div>
             </div>
-        `;
-    }).join('');
+            <button class="btn-small" onclick="loadPresentation('${p.id}')">Отвори</button>
+        </div>
+    `).join('');
 }
 
 function loadPresentation(id) {
     const presentation = fileManager.load(id);
     if (presentation) {
         loadPresentationInEditor(presentation);
-        updateStatus(`📂 Заредена: ${presentation.title}`);
+        updateStatus(`Отворена: ${presentation.title}`);
     }
 }
 
-function loadPresentationInEditor(presentation) {
-    if (!presentation) return;
-    
-    document.getElementById('presentation-title').value = presentation.title;
-    document.getElementById('slim-editor').value = presentation.content;
-    document.getElementById('presentation-type').value = presentation.type;
-    
-    document.getElementById('slide-count').textContent = presentation.slideCount;
-    document.getElementById('current-type').textContent = presentation.type;
-    document.getElementById('char-count').textContent = `${presentation.content.length} символа`;
-    document.getElementById('line-count').textContent = presentation.content.split('\n').length;
-    
-    document.getElementById('file-status').textContent = '✓';
-    document.getElementById('file-status').style.color = 'var(--success)';
-    
-    loadFileList();
-}
-
-function showContextMenu(e, presentationId) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const presentation = fileManager.getAll().find(p => p.id === presentationId);
-    if (!presentation) return;
-    
-    const oldMenu = document.getElementById('context-menu');
-    if (oldMenu) oldMenu.remove();
-    
-    const menu = document.createElement('div');
-    menu.id = 'context-menu';
-    menu.style.cssText = `
-        position: fixed;
-        left: ${e.clientX}px;
-        top: ${e.clientY}px;
-        z-index: 10000;
-    `;
-    
-    menu.innerHTML = `
-        <div class="context-menu-header">
-            <span>${escapeHtml(presentation.title)}</span>
-        </div>
-        <div class="context-menu-items">
-            <div class="menu-item" onclick="loadPresentation('${presentation.id}'); closeContextMenu();">
-                <span>📂</span> Отвори
-            </div>
-            <div class="menu-item" onclick="exportPresentation('${presentation.id}'); closeContextMenu();">
-                <span>💾</span> Експортирай
-            </div>
-            <div class="menu-item" onclick="duplicatePresentation('${presentation.id}'); closeContextMenu();">
-                <span>📋</span> Дублирай
-            </div>
-            <hr>
-            <div class="menu-item" onclick="viewInDashboard('${presentation.id}'); closeContextMenu();">
-                <span>👁️</span> Виж в Dashboard
-            </div>
-            <hr>
-            <div class="menu-item danger" onclick="deletePresentation('${presentation.id}'); closeContextMenu();">
-                <span>🗑️</span> Изтрий
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(menu);
-    
-    setTimeout(() => {
-        const rect = menu.getBoundingClientRect();
-        if (rect.right > window.innerWidth) {
-            menu.style.left = `${window.innerWidth - rect.width - 10}px`;
-        }
-        if (rect.bottom > window.innerHeight) {
-            menu.style.top = `${window.innerHeight - rect.height - 10}px`;
-        }
-    }, 0);
-    
-    setTimeout(() => {
-        document.addEventListener('click', closeContextMenu);
-        document.addEventListener('contextmenu', closeContextMenu);
-    }, 10);
-}
-
-function closeContextMenu() {
-    const menu = document.getElementById('context-menu');
-    if (menu) menu.remove();
-    document.removeEventListener('click', closeContextMenu);
-    document.removeEventListener('contextmenu', closeContextMenu);
-}
-
-function deletePresentation(id) {
-    const presentation = fileManager.getAll().find(p => p.id === id);
-    if (!presentation) return;
-    
-    if (!confirm(`Сигурни ли сте, че искате да изтриете:\n\n"${presentation.title}"\n\nТова действие не може да бъде отменено!`)) {
-        return;
-    }
-    
-    fileManager.delete(id);
-    loadFileList();
-    
-    if (fileManager.getCurrentFile()?.id === id) {
-        const remaining = fileManager.getAll();
-        if (remaining.length > 0) {
-            loadPresentationInEditor(remaining[0]);
-        } else {
-            document.getElementById('slim-editor').value = '';
-            document.getElementById('presentation-title').value = '';
-            document.getElementById('slide-count').textContent = '0';
-            document.getElementById('char-count').textContent = '0 символа';
-            document.getElementById('line-count').textContent = '0';
-        }
-    }
-    
-    updateStatus(`Изтрита: ${presentation.title}`);
-    showStatus('Презентацията е изтрита', 'success');
-}
-
-function duplicatePresentation(id) {
-    const newPresentation = fileManager.duplicate(id);
-    if (newPresentation) {
-        loadFileList();
-        loadPresentationInEditor(newPresentation);
-        updateStatus(`Дублирана презентация`);
-        showStatus('Презентацията е дублирана', 'success');
-    }
-}
-
-function exportPresentation(id) {
-    const result = fileManager.export(id, 'slim');
-    if (result) {
-        updateStatus(`Експортирана: ${result.filename}`);
-        showStatus('Презентацията е изтеглена', 'success');
-    }
-}
-
-function viewInDashboard(id) {
-    handleSave();
-    window.location.href = `../dashboard/dashboard.html`;
-}
-
-function displayValidationResults(result) {
-    const output = document.getElementById('validation-output');
-    
-    if (result.isValid) {
-        output.innerHTML = `
-            <div class="validation-message success">
-                <strong>✓ Валидна презентация!</strong>
-                <p>Няма открити грешки.</p>
-            </div>
-            <div class="validation-message success">
-                <strong>Статистика:</strong>
-                <p>Слайдове: ${result.slideCount}</p>
-            </div>
-        `;
+function loadLastOrCreateNew() {
+    const last = fileManager.loadLast();
+    if (last) {
+        loadPresentationInEditor(last);
+        updateStatus(`Отворена: ${last.title}`);
     } else {
-        const errorsHTML = result.errors.map(err => `
-            <div class="validation-message error">
-                <strong>Грешка на ред ${err.line}</strong>
-                <p>${escapeHtml(err.message)}</p>
-            </div>
-        `).join('');
-        
-        const warningsHTML = result.warnings.map(warn => `
-            <div class="validation-message warning">
-                <strong>Предупреждение на ред ${warn.line}</strong>
-                <p>${escapeHtml(warn.message)}</p>
-            </div>
-        `).join('');
-        
-        output.innerHTML = errorsHTML + warningsHTML;
+        handleNew();
     }
 }
 
-function parseSlimContent(content) {
-    const lines = content.split('\n');
-    const slides = [];
-    let currentSlide = null;
-    
-    for (let line of lines) {
-        line = line.trim();
-        
-        if (line.startsWith('#slide') || (line.startsWith('#title') && !currentSlide)) {
-            if (currentSlide) slides.push(currentSlide);
-            currentSlide = { title: '', type: 'text-only', data: {} };
-        }
-        
-        if (currentSlide) {
-            if (line.startsWith('#title ')) {
-                currentSlide.title = line.substring(7);
-            } else if (line.startsWith('#type ')) {
-                currentSlide.type = line.substring(6);
-            } else if (line.startsWith('#data ')) {
-                const dataStr = line.substring(6);
-                const pairs = dataStr.split(';');
-                pairs.forEach(pair => {
-                    const [key, value] = pair.split('=');
-                    if (key && value) {
-                        currentSlide.data[key.trim()] = value.trim();
-                    }
-                });
+function startAutoSave() {
+    autoSaveInterval = setInterval(() => {
+        if (fileManager && fileManager.hasUnsavedChanges()) {
+            const editor = document.getElementById('slim-editor');
+            const titleInput = document.getElementById('presentation-title');
+            
+            const content = editor.value;
+            const title = titleInput.value || 'Autosave';
+            
+            if (content.trim()) {
+                fileManager.save(content, title);
+                updateStatus('💾 Auto-save', 1000);
             }
         }
+    }, 30000);
+}
+
+function updateStatus(message, timeout = 0) {
+    const statusElement = document.getElementById('file-status');
+    if (statusElement) {
+        statusElement.textContent = message;
+        
+        if (timeout > 0) {
+            setTimeout(() => {
+                updateStatus('●');
+            }, timeout);
+        }
     }
+}
+
+function showStatus(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#51cf66' : type === 'error' ? '#ff6b6b' : '#4dabf7'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    `;
     
-    if (currentSlide) slides.push(currentSlide);
-    return slides;
-}
-
-function generatePreviewHTML(slides) {
-    return slides.map((slide, index) => `
-        <div class="preview-slide" style="
-            margin-bottom: 30px;
-            padding: 30px;
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            border: 2px solid var(--border);
-        ">
-            <h3 style="color: var(--primary); margin-bottom: 20px;">
-                Слайд ${index + 1}: ${escapeHtml(slide.title)}
-            </h3>
-            <p style="color: var(--text-secondary); margin-bottom: 10px;">
-                <strong>Тип:</strong> ${slide.type}
-            </p>
-            ${generateSlideContent(slide)}
-        </div>
-    `).join('');
-}
-
-function generateSlideContent(slide) {
-    switch (slide.type) {
-        case 'title':
-            return `
-                <div style="text-align: center; padding: 40px;">
-                    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">${escapeHtml(slide.title)}</h1>
-                    ${slide.data.subtitle ? `<h2 style="font-size: 1.5rem; color: var(--text-secondary);">${escapeHtml(slide.data.subtitle)}</h2>` : ''}
-                    ${slide.data.author ? `<p style="margin-top: 20px; color: var(--text-muted);">${escapeHtml(slide.data.author)}</p>` : ''}
-                </div>
-            `;
-        case 'text-only':
-            return `<div style="padding: 20px;"><p style="font-size: 1.1rem; line-height: 1.8;">${escapeHtml(slide.data.content || '')}</p></div>`;
-        case 'list':
-            const items = slide.data.items ? slide.data.items.split(';') : [];
-            return `<ul style="padding: 20px; font-size: 1.1rem; line-height: 2;">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
-        case 'code':
-            return `
-                <pre style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius); overflow-x: auto;"><code>${escapeHtml(slide.data.code || '')}</code></pre>
-                ${slide.data.content ? `<p style="margin-top: 15px; color: var(--text-secondary);">${escapeHtml(slide.data.content)}</p>` : ''}
-            `;
-        default:
-            return `<p>Тип: ${slide.type}</p>`;
-    }
-}
-
-function toggleTheme() {
-    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-    setTheme(currentTheme);
-}
-
-function setTheme(theme) {
-    currentTheme = theme;
-    document.body.className = `theme-${theme}`;
-    localStorage.setItem('theme', theme);
+    document.body.appendChild(notification);
     
-    const icon = document.querySelector('#btn-theme .icon');
-    if (icon) {
-        icon.textContent = theme === 'dark' ? '☀️' : '🌓';
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+function updateFileStatus() {
+    const status = document.getElementById('file-status');
+    if (fileManager && fileManager.hasUnsavedChanges()) {
+        status.textContent = '● Незапазено';
+        status.style.color = '#ff6b6b';
+    } else {
+        status.textContent = '● Запазено';
+        status.style.color = '#51cf66';
     }
 }
 
-function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
+function updateCharCount(count) {
+    const charCount = document.getElementById('char-count');
+    if (charCount) {
+        charCount.textContent = `${count} символа`;
+    }
 }
 
 function switchTab(tabName) {
@@ -588,67 +434,54 @@ function switchTab(tabName) {
     });
 }
 
+function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.body.className = `theme-${currentTheme}`;
+    localStorage.setItem('editor-theme', currentTheme);
+    updateStatus(`Тема: ${currentTheme}`);
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('editor-theme');
+    if (savedTheme) {
+        currentTheme = savedTheme;
+        document.body.className = `theme-${currentTheme}`;
+    }
+}
+
 function handleKeyboardShortcuts(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
         handleSave();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+
+    if (e.ctrlKey && e.key === 'g') {
         e.preventDefault();
-        handleNew();
+        handleGenerate();
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
-        e.preventDefault();
-        handleOpen();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+
+    if (e.ctrlKey && e.key === 'p') {
         e.preventDefault();
         handlePreview();
     }
-}
 
-function startAutoSave() {
-    autoSaveInterval = setInterval(() => {
-        if (fileManager.hasUnsavedChanges() && fileManager.getCurrentFile()) {
-            console.log('💾 Auto-saving...');
-            handleSave();
-        }
-    }, 30000);
-}
-
-function loadLastOrCreateNew() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const loadId = urlParams.get('load');
-    
-    if (loadId) {
-        const presentationId = Number(loadId);
-        const presentations = fileManager.getAll();
-        const toLoad = presentations.find(p => p.id === presentationId);
-        
-        if (toLoad) {
-            loadPresentation(toLoad.id);
-            updateStatus(`📂 Заредена от линк: ${toLoad.title}`);
-            return;
-        }
-    }
-    
-    const presentations = fileManager.getAll();
-    
-    if (presentations.length > 0) {
-        const sorted = fileManager.sortByDate();
-        loadPresentation(sorted[0].id);
-    } else {
-        const newPres = fileManager.createNew('Моята първа презентация', 'lecture');
-        loadPresentation(newPres.id);
+    if (e.key === 'Escape') {
+        closePreview();
     }
 }
 
-function updateStatus(message) {
-    document.getElementById('status-message').textContent = message;
-}
-
-function showStatus(message, type) {
-    updateStatus(message);
+function formatTimeAgo(timestamp) {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'малко';
+    if (minutes < 60) return `${minutes} мин`;
+    if (hours < 24) return `${hours} ч`;
+    return `${days} дни`;
 }
 
 function escapeHtml(text) {
@@ -657,31 +490,10 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function formatDate(isoString) {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Току-що';
-    if (diffMins < 60) return `Преди ${diffMins} мин`;
-    if (diffHours < 24) return `Преди ${diffHours} ч`;
-    if (diffDays < 7) return `Преди ${diffDays} дни`;
-    
-    return date.toLocaleDateString('bg-BG');
-}
-
-window.loadPresentation = loadPresentation;
-window.loadFileList = loadFileList;
-window.loadPresentationInEditor = loadPresentationInEditor;
-window.updateStatus = updateStatus;
-window.deletePresentation = deletePresentation;
-window.duplicatePresentation = duplicatePresentation;
-window.exportPresentation = exportPresentation;
-window.viewInDashboard = viewInDashboard;
-window.showContextMenu = showContextMenu;
-window.closeContextMenu = closeContextMenu;
-
-console.log('Editor script loaded');
+window.addEventListener('beforeunload', (e) => {
+    if (fileManager && fileManager.hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});

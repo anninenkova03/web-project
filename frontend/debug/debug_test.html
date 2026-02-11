@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 Debug Test Page</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .test-section {
+            background: #252526;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #4ec9b0;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        .success {
+            color: #4ec9b0;
+        }
+        .error {
+            color: #f48771;
+        }
+        .warning {
+            color: #dcdcaa;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            border-radius: 4px;
+        }
+        .log {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #007acc;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Web Presentations - Complete Debug Test</h1>
+    
+    <!-- Test 1: Check Files -->
+    <div class="test-section">
+        <h2>📂 Test 1: Check if files are loaded</h2>
+        <button onclick="test1()">Run Test 1</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <!-- Test 2: Check Authentication -->
+    <div class="test-section">
+        <h2>🔐 Test 2: Check Authentication</h2>
+        <button onclick="test2()">Run Test 2</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <!-- Test 3: Test API Health -->
+    <div class="test-section">
+        <h2>💓 Test 3: API Health Check</h2>
+        <button onclick="test3()">Run Test 3</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <!-- Test 4: Test Generate with Sample SLIM -->
+    <div class="test-section">
+        <h2>⚙️ Test 4: Generate Presentation</h2>
+        <p>Sample SLIM code (you can edit):</p>
+        <textarea id="slim-code">
+#presentation Test Presentation
+#slug test-pres
+#presentationType lecture
+
+#slide
+#title Welcome
+#type title
+#data subtitle=This is a test;author=Debug Test
+
+#slide
+#title Content
+#type text
+#data content=This is test content
+
+#slide
+#title The End
+#type title
+#data subtitle=Thank you!
+        </textarea>
+        <br><br>
+        <button onclick="test4()">Generate This Presentation</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <!-- Test 5: Check Database -->
+    <div class="test-section">
+        <h2>💾 Test 5: Check if presentation was created in database</h2>
+        <button onclick="test5()">Check Database</button>
+        <div id="test5-result"></div>
+    </div>
+
+    <!-- Console Log -->
+    <div class="test-section">
+        <h2>📋 Console Log</h2>
+        <div id="console-log" class="log"></div>
+    </div>
+
+    <script src="../shared/AuthService.js"></script>
+    <script src="../shared/APIService.js"></script>
+    <script>
+        // Override console.log to display in page
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLogEntry('LOG', args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLogEntry('ERROR', args.join(' '), true);
+        };
+
+        function addLogEntry(type, message, isError = false) {
+            const logDiv = document.getElementById('console-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.borderLeftColor = isError ? '#f48771' : '#4ec9b0';
+            entry.innerHTML = `<span class="${isError ? 'error' : 'success'}">[${type}]</span> ${escapeHtml(message)}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // TEST 1: Check if files are loaded
+        function test1() {
+            const result = document.getElementById('test1-result');
+            result.innerHTML = '<p>Checking...</p>';
+            
+            const checks = {
+                'AuthService loaded': typeof AuthService !== 'undefined',
+                'authService instance': typeof authService !== 'undefined',
+                'APIService loaded': typeof APIService !== 'undefined',
+                'apiService instance': typeof apiService !== 'undefined'
+            };
+            
+            let html = '<pre>';
+            for (const [check, passed] of Object.entries(checks)) {
+                html += `${passed ? '✅' : '❌'} ${check}\n`;
+            }
+            html += '</pre>';
+            
+            result.innerHTML = html;
+            console.log('Test 1 complete:', checks);
+        }
+
+        // TEST 2: Check Authentication
+        async function test2() {
+            const result = document.getElementById('test2-result');
+            result.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const isAuth = authService.isAuthenticated();
+                const token = authService.getToken();
+                const user = await authService.getCurrentUser();
+                
+                let html = '<pre>';
+                html += `✅ Authenticated: ${isAuth}\n`;
+                html += `✅ Token exists: ${!!token}\n`;
+                if (token) {
+                    html += `   Token: ${token.substring(0, 20)}...\n`;
+                }
+                html += `✅ User loaded: ${!!user}\n`;
+                if (user) {
+                    html += `   User ID: ${user.id}\n`;
+                    html += `   Username: ${user.username}\n`;
+                    html += `   Role: ${user.role}\n`;
+                }
+                html += '</pre>';
+                
+                if (!isAuth) {
+                    html += '<p class="error">❌ You are NOT logged in!</p>';
+                    html += '<p>Please <a href="../auth/auth.html" style="color: #4ec9b0;">login here</a> first.</p>';
+                }
+                
+                result.innerHTML = html;
+                console.log('Test 2 complete:', { isAuth, hasToken: !!token, user });
+            } catch (error) {
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Test 2 error:', error);
+            }
+        }
+
+        // TEST 3: API Health Check
+        async function test3() {
+            const result = document.getElementById('test3-result');
+            result.innerHTML = '<p>Checking...</p>';
+            
+            try {
+                const response = await fetch(apiService.baseURL + '/api/health');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <p class="success">✅ API is reachable!</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                console.log('Test 3 complete:', data);
+            } catch (error) {
+                result.innerHTML = `
+                    <p class="error">❌ API is NOT reachable!</p>
+                    <p>Error: ${error.message}</p>
+                    <p>Check if backend is running and baseURL is correct:</p>
+                    <pre>Current baseURL: ${apiService.baseURL}</pre>
+                `;
+                console.error('Test 3 error:', error);
+            }
+        }
+
+        // TEST 4: Generate Presentation
+        async function test4() {
+            const result = document.getElementById('test4-result');
+            const slimCode = document.getElementById('slim-code').value;
+            
+            result.innerHTML = '<p class="warning">⏳ Generating presentation...</p>';
+            
+            try {
+                // Check authentication first
+                if (!authService.isAuthenticated()) {
+                    throw new Error('Not authenticated! Please login first.');
+                }
+                
+                console.log('Sending SLIM code to API...');
+                console.log('SLIM code length:', slimCode.length);
+                console.log('First 100 chars:', slimCode.substring(0, 100));
+                
+                // Make the request
+                const response = await apiService.generatePresentation(slimCode);
+                
+                result.innerHTML = `
+                    <p class="success">✅ Presentation generated successfully!</p>
+                    <pre>${JSON.stringify(response, null, 2)}</pre>
+                    <p>You can now check Test 5 to see if it's in the database.</p>
+                `;
+                console.log('Test 4 complete:', response);
+            } catch (error) {
+                result.innerHTML = `
+                    <p class="error">❌ Failed to generate presentation!</p>
+                    <p>Error: ${error.message}</p>
+                    <pre>${error.stack || ''}</pre>
+                `;
+                console.error('Test 4 error:', error);
+            }
+        }
+
+        // TEST 5: Check Database
+        async function test5() {
+            const result = document.getElementById('test5-result');
+            result.innerHTML = '<p>Checking database...</p>';
+            
+            try {
+                const presentations = await apiService.getPresentations({ limit: 100 });
+                
+                result.innerHTML = `
+                    <p class="success">✅ Found ${presentations.data ? presentations.data.length : 0} presentations in database</p>
+                    <pre>${JSON.stringify(presentations, null, 2)}</pre>
+                `;
+                console.log('Test 5 complete:', presentations);
+            } catch (error) {
+                result.innerHTML = `
+                    <p class="error">❌ Error checking database</p>
+                    <p>Error: ${error.message}</p>
+                `;
+                console.error('Test 5 error:', error);
+            }
+        }
+
+        // Auto-run Test 1 on load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('=== DEBUG TEST PAGE LOADED ===');
+            console.log('Current URL:', window.location.href);
+            console.log('API Base URL:', apiService ? apiService.baseURL : 'NOT LOADED');
+            test1();
+        });
+    </script>
+</body>
+</html>

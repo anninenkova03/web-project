@@ -2,40 +2,38 @@ class APIService {
     constructor() {
         this.baseURL = 'http://localhost/web-project/backend/public';
         this.cache = new Map();
-        this.cacheTimeout = 60000;
+        this.cacheTimeout = 60000;``
     }
 
     async request(endpoint, options = {}) {
         try {
-            const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint}`;
+            const url = `${this.baseURL}${endpoint}`;
 
-            const authHeaders = authService ? authService.getAuthHeader() : {};
-            
             const response = await fetch(url, {
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...authHeaders,
+                    'Accept': 'application/json',
                     ...options.headers
                 },
                 ...options
             });
 
-            if (response.status === 401) {
-                if (authService) {
-                    authService.clearAuth();
-                    window.location.href = '../auth/auth.html';
-                }
-                throw new Error('Unauthorized');
+            const text = await response.text();
+
+            if (text.trim().startsWith('<')) {
+                console.error('Server returned HTML:', text);
+                throw new Error('Backend returned HTML instead of JSON.');
             }
 
-            const data = await response.json();
-            
-            if (data.success === false) {
-                throw new Error(data.error || 'API request failed');
+            const data = JSON.parse(text);
+
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP ${response.status}`);
             }
-            
-            return data.data || data;
-            
+
+            return data;
+
         } catch (error) {
             console.error('API Request Error:', error);
             throw error;
@@ -49,12 +47,10 @@ class APIService {
     }
 
     async generatePresentation(slimContent) {
-        const response = await this.request('/api/generate', {
+        return await this.request('/api/generate', {
             method: 'POST',
             body: JSON.stringify({ slim: slimContent })
         });
-        this.clearCache();
-        return response;
     }
 
     async getPresentation(id) {
