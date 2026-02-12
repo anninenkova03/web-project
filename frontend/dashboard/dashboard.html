@@ -149,7 +149,7 @@
             border-color: #ff6b6b;
         }
         .favorite-btn.favorited {
-            background: #ffd93d;
+            background: #fbe9a9;
             color: #333;
             border-color: #ffd93d;
         }
@@ -364,10 +364,7 @@
                     search: search 
                 };
 
-                if (currentFilter === 'all' && currentUser) {
-                    // Default: show only current user's presentations
-                    filters.user_id = currentUser.id;
-                } else if (currentFilter === 'my' && currentUser) {
+                if (currentFilter === 'my' && currentUser) {
                     filters.user_id = currentUser.id;
                 } else if (currentFilter === 'lecture' || currentFilter === 'tutorial' || currentFilter === 'project') {
                     filters.type = currentFilter;
@@ -376,7 +373,8 @@
                 let data;
                 
                 if (currentFilter === 'favorites') {
-                    const favorites = await apiService.getFavorites();
+                    const response = await apiService.getFavorites();
+                    const favorites = response.data || [];
                     data = { 
                         data: favorites, 
                         pagination: { 
@@ -429,7 +427,7 @@
                 return `
                     <div class="presentation-card">
                         <div class="card-header">
-                            <span class="badge badge-${p.presentation_type || 'lecture'}">${(p.presentation_type || 'lecture').toUpperCase()}</span>
+                            <span class="badge badge-${p.presentation_type || 'lecture'}">${p.presentation_type || 'Lecture'}</span>
                             <div class="card-actions">
                                 <button class="like-btn ${p.is_liked ? 'liked' : ''}" 
                                         onclick="toggleLike(${p.id}, this)" 
@@ -511,9 +509,9 @@
 
             try {
                 btn.disabled = true;
-                const result = await apiService.toggleLike(id);
-                btn.classList.toggle('liked', result.is_liked);
-                btn.innerHTML = `❤️ ${result.likes_count}`;
+                const response = await apiService.toggleLike(id);
+                btn.classList.toggle('liked', response.is_liked);
+                btn.innerHTML = `❤️ ${response.likes_count}`;
             } catch (error) {
                 console.error('Error toggling like:', error);
                 alert('Грешка при харесване: ' + error.message);
@@ -530,8 +528,8 @@
 
             try {
                 btn.disabled = true;
-                const result = await apiService.toggleFavorite(id);
-                btn.classList.toggle('favorited', result.is_favorited);
+                const response = await apiService.toggleFavorite(id);
+                btn.classList.toggle('favorited', response.is_favorited);
             } catch (error) {
                 console.error('Error toggling favorite:', error);
                 alert('Грешка при добавяне в любими: ' + error.message);
