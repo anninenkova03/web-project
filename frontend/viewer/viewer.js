@@ -106,7 +106,6 @@ function renderSlide() {
             break;
 
         case 'content':
-        case 'content':
         case 'text-only':
             slideContent.classList.add('slide-content');
             slideContent.innerHTML = `
@@ -129,7 +128,6 @@ function renderSlide() {
         case 'image-right':
             slideContent.classList.add('slide-image-text');
             const imageOnLeft = slide.type === 'image-left';
-            const imageOnLeft = slide.type === 'image-left';
             slideContent.innerHTML = `
                 <div class="image-text-container ${imageOnLeft ? 'image-left' : 'image-right'}">
                     <div class="image-part">
@@ -140,17 +138,6 @@ function renderSlide() {
                         <p>${slide.data.text || slide.data.content || ''}</p>
                     </div>
                 </div>
-            `;
-            break;
-
-        case 'list':
-            slideContent.classList.add('slide-list');
-            const items = slide.data.items ? slide.data.items.split(';') : [];
-            slideContent.innerHTML = `
-                <h2>${slide.title}</h2>
-                <ul>
-                    ${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-                </ul>
             `;
             break;
 
@@ -225,7 +212,7 @@ function editPresentation() {
 function setupEventListeners() {
     prevBtn.addEventListener('click', prevSlide);
     nextBtn.addEventListener('click', nextSlide);
-        
+    
     backBtn.addEventListener('click', () => {
         window.location.href = `../dashboard/dashboard.html`;
     });
@@ -252,7 +239,6 @@ function setupEventListeners() {
                 prevSlide();
                 break;
             case 'f':
-           
             case 'F':
                 e.preventDefault();
                 toggleFullscreen();
@@ -264,18 +250,9 @@ function setupEventListeners() {
                     editPresentation();
                 }
                 break;
-            case 'e':
-            case 'E':
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    editPresentation();
-                }
-                break;
             case 'Escape':
                 if (isFullscreen) {
-                    {
                     toggleFullscreen();
-                }
                 }
                 break;
         }
@@ -290,7 +267,6 @@ function setupEventListeners() {
     slideContent.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
     });
-
 
     slideContent.addEventListener('touchend', (e) => {
         const touchEndX = e.changedTouches[0].clientX;
