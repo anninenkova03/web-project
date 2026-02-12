@@ -142,6 +142,10 @@ class APIService {
         return await this.request(`/api/presentation/like?id=${id}`, { method: 'POST' });
     }
 
+    async getFullPresentation(id) {
+        return await this.request(`/api/presentation?id=${id}`);
+    }
+
     async toggleFavorite(id) {
         return await this.request(`/api/presentation/favorite?id=${id}`, { method: 'POST' });
     }
