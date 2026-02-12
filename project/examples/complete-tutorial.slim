@@ -1,0 +1,102 @@
+# Example SLIM Presentation
+# This file demonstrates all features of the SLIM markup language
+
+#presentation Complete Tutorial - Web Technologies
+#presentationType lecture
+#slug web-tech-tutorial-2024
+
+# ===== TITLE SLIDE =====
+#slide
+#title Welcome to Web Technologies
+#type title
+#data subtitle=A Complete Guide to Modern Web Development;author=John Doe
+
+# ===== TEXT ONLY SLIDE =====
+#slide
+#title Course Overview
+#type text-only
+#data content=In this course, we will cover: HTML5, CSS3, JavaScript ES6+, PHP 8, and MySQL. You will learn how to build modern, responsive web applications from scratch.
+
+# ===== TEXT SLIDE WITH BULLET POINTS =====
+#slide
+#title What You'll Learn
+#type text
+#data content=• Frontend Development (HTML/CSS/JS)|• Backend Development (PHP/MySQL)|• RESTful API Design|• Database Management|• Version Control with Git
+
+# ===== CODE SLIDE - HTML EXAMPLE =====
+#slide
+#title HTML5 Structure
+#type code
+#data code=<!DOCTYPE html>|<html lang="en">|<head>|    <meta charset="UTF-8">|    <title>My Page</title>|</head>|<body>|    <h1>Hello World</h1>|</body>|</html>;language=HTML
+
+# ===== CODE SLIDE - CSS EXAMPLE =====
+#slide
+#title CSS3 Styling
+#type code
+#data code=.container {|    max-width: 1200px;|    margin: 0 auto;|    padding: 20px;|    background: #f0f0f0;|    border-radius: 8px;|    box-shadow: 0 2px 4px rgba(0,0,0,0.1);|};language=CSS
+
+# ===== CODE SLIDE - JAVASCRIPT EXAMPLE =====
+#slide
+#title JavaScript ES6+
+#type code
+#data code=const fetchData = async (url) => {|    try {|        const response = await fetch(url);|        const data = await response.json();|        return data;|    } catch (error) {|        console.error('Error:', error);|    }|};|fetchData('/api/data');language=JavaScript
+
+# ===== CODE SLIDE - PHP EXAMPLE =====
+#slide
+#title PHP Backend
+#type code
+#data code=<?php|class User {|    private $db;|    |    public function __construct(PDO $db) {|        $this->db = $db;|    }|    |    public function find($id) {|        $stmt = $this->db->prepare(|            "SELECT * FROM users WHERE id = ?"|        );|        $stmt->execute([$id]);|        return $stmt->fetch();|    }|};language=PHP
+
+# ===== IMAGE + TEXT SLIDE =====
+#slide
+#title Visual Design Principles
+#type image-text
+#data image=https://via.placeholder.com/600x400;caption=Responsive Design Example;text=Modern web design must be responsive and accessible. Use flexible layouts, media queries, and semantic HTML to create sites that work on all devices.
+
+# ===== TWO COLUMN SLIDE =====
+#slide
+#title Frontend vs Backend
+#type two-column
+#data left=Frontend|• HTML/CSS|• JavaScript|• React/Vue|• UI/UX Design;right=Backend|• PHP/Python|• Databases|• APIs|• Server Logic
+
+# ===== COMPARISON SLIDE =====
+#slide
+#title SQL vs NoSQL
+#type comparison
+#data left_title=SQL Databases;left_content=• Structured Data|• ACID Compliance|• Table Relations|• Examples: MySQL, PostgreSQL;right_title=NoSQL Databases;right_content=• Flexible Schema|• Horizontal Scaling|• Document Store|• Examples: MongoDB, Redis
+
+# ===== QUOTE SLIDE =====
+#slide
+#title Words of Wisdom
+#type quote
+#data quote=The best way to predict the future is to invent it.;author=Alan Kay;role=Computer Scientist
+
+# ===== LIST SLIDE =====
+#slide
+#title Development Best Practices
+#type list
+#data items=Write clean, readable code|Use version control (Git)|Write tests for your code|Document your API|Follow naming conventions|Keep dependencies updated|Use linters and formatters|Review code regularly
+
+# ===== DIAGRAM SLIDE =====
+#slide
+#title MVC Architecture
+#type text-only
+#data content=Model-View-Controller Pattern:|• Model: Data and business logic|• View: User interface|• Controller: Request handling|This separation of concerns makes code more maintainable and testable.
+
+# ===== STATISTICS SLIDE =====
+#slide
+#title Web Development Statistics 2024
+#type text
+#data content=• 94% of first impressions are design-related|• 88% of users won't return after a bad experience|• 47% expect pages to load in 2 seconds|• Mobile traffic accounts for 54% of global web traffic
+
+# ===== THANK YOU SLIDE =====
+#slide
+#title Thank You!
+#type title
+#data subtitle=Questions?;author=Contact: john.doe@example.com
+
+# ===== RESOURCES SLIDE =====
+#slide
+#title Additional Resources
+#type text
+#data content=📚 MDN Web Docs: developer.mozilla.org|💻 GitHub: github.com|🎓 FreeCodeCamp: freecodecamp.org|📖 W3Schools: w3schools.com|🔧 Stack Overflow: stackoverflow.com

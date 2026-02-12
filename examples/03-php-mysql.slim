@@ -1,0 +1,42 @@
+#presentation PHP и MySQL: Работа с бази данни
+#presentationType tutorial
+
+#slide
+#title PHP и MySQL
+#type title
+#data subtitle=Свързване и работа с релационни бази данни;author=Преподавател
+
+#slide
+#title Защо PHP + MySQL?
+#type list
+#data items=PHP е сървърен език — изпълнява се на сървъра;MySQL е най-популярната relational база данни;Заедно се използват в над 80% от уеб приложенията;XAMPP ги предоставя готови за разработка
+
+#slide
+#title Свързване с PDO
+#type code
+#data language=php;code=<?php\n$host = 'localhost';\n$db   = 'my_database';\n$user = 'root';\n$pass = '';\n\ntry {\n    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);\n    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);\n    echo "Свързан успешно!";\n} catch (PDOException $e) {\n    echo "Грешка: " . $e->getMessage();\n}
+
+#slide
+#title SELECT заявка
+#type code
+#data language=php;code=// Вземи всички потребители\n$stmt = $pdo->query("SELECT * FROM users ORDER BY name");\n$users = $stmt->fetchAll(PDO::FETCH_ASSOC);\n\nforeach ($users as $user) {\n    echo $user['name'] . " - " . $user['email'];\n}
+
+#slide
+#title Prepared Statements
+#type code
+#data language=php;code=// ✅ Безопасно вмъкване с prepared statement\n$stmt = $pdo->prepare(\n    "INSERT INTO users (name, email) VALUES (?, ?)"\n);\n$stmt->execute(['Иван Иванов', 'ivan@example.com']);\n\n// ✅ Безопасно търсене\n$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");\n$stmt->execute([$_POST['email']]);\n$user = $stmt->fetch();
+
+#slide
+#title UPDATE и DELETE
+#type code
+#data language=php;code=// UPDATE\n$stmt = $pdo->prepare(\n    "UPDATE users SET name = ? WHERE id = ?"\n);\n$stmt->execute(['Петър Петров', 5]);\n\n// DELETE\n$stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");\n$stmt->execute([5]);\n\necho "Засегнати редове: " . $stmt->rowCount();
+
+#slide
+#title SQL инжекция — опасно vs безопасно
+#type list
+#data items=❌ НИКОГА не вмъквай $_POST директно в SQL;❌ "SELECT * FROM users WHERE id=" . $_GET['id'];✅ Използвай prepared statements ВИНАГИ;✅ Валидирай входните данни преди заявката
+
+#slide
+#title Обобщение
+#type list
+#data items=PDO = универсален PHP интерфейс за бази данни;Prepared statements пазят от SQL инжекция;fetchAll() за много редове / fetch() за един;rowCount() за брой засегнати редове;Следваща стъпка: изграждане на CRUD приложение

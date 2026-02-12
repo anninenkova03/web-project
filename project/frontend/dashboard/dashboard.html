@@ -289,7 +289,7 @@
             <button class="filter-btn" data-filter="tutorial">Уроци</button>
             <button class="filter-btn" data-filter="project">Проекти</button>
             <button class="filter-btn" data-filter="my">Моите</button>
-            <button class="filter-btn" data-filter="favorites">⭐ Любими</button>
+            <button class="filter-btn" data-filter="favorites">❤️ Любими</button>
         </div>
     </div>
 
@@ -364,10 +364,7 @@
                     search: search 
                 };
 
-                if (currentFilter === 'all' && currentUser) {
-                    // Default: show only current user's presentations
-                    filters.user_id = currentUser.id;
-                } else if (currentFilter === 'my' && currentUser) {
+                if (currentFilter === 'my' && currentUser) {
                     filters.user_id = currentUser.id;
                 } else if (currentFilter === 'lecture' || currentFilter === 'tutorial' || currentFilter === 'project') {
                     filters.type = currentFilter;
@@ -429,7 +426,7 @@
                 return `
                     <div class="presentation-card">
                         <div class="card-header">
-                            <span class="badge badge-${p.presentation_type || 'lecture'}">${(p.presentation_type || 'lecture').toUpperCase()}</span>
+                            <span class="badge badge-${p.presentation_type || 'lecture'}">${p.presentation_type || 'Lecture'}</span>
                             <div class="card-actions">
                                 <button class="like-btn ${p.is_liked ? 'liked' : ''}" 
                                         onclick="toggleLike(${p.id}, this)" 

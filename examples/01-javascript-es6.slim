@@ -1,0 +1,26 @@
+#presentation Модерен JavaScript: ES6+ Функции
+
+#slide
+#title ES6+ JavaScript Функции
+#type title
+#data subtitle=Arrow функции, Destructuring, Spread/Rest;author=Team Frontend
+
+#slide
+#title Основни ES6+ Функции
+#type list
+#data items=Arrow функции;Template literals;Destructuring;Spread/rest оператори;Модули (import/export)
+
+#slide
+#title Arrow Функции
+#type code
+#data language=javascript;code=// Традиционна функция\nconst sum = function(a, b) {\n    return a + b;\n};\n\n// Arrow функция\nconst sumArrow = (a, b) => a + b;\n\nconsole.log(sumArrow(5, 3)); // 8
+
+#slide
+#title Destructuring
+#type code
+#data language=javascript;code=// Destructuring на масив\nconst [first, second] = ['red', 'green', 'blue'];\nconsole.log(first); // 'red'\n\n// Destructuring на обект\nconst { name, age } = { name: 'Иван', age: 30 };\nconsole.log(name); // 'Иван'
+
+#slide
+#title Предимства на ES6+
+#type list
+#data items=По-четим код;По-малко boilerplate;Подобрена производителност;Поддръжка на функционално програмиране;Съвместимост с модерни браузъри

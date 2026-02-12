@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Viewer</title>
+    <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+    <div class="viewer-container">
+        <div class="viewer-header">
+            <div class="presentation-title" id="presentationTitle">Зареждане...</div>
+            <div class="header-controls">
+                <div class="slide-counter" id="slideCounter">1 / 1</div>
+                <button class="btn-icon fullscreen-btn" id="fullscreenBtn">⛶ Fullscreen</button>
+                <button class="btn-icon" id="editBtn" style="display:none;">✏️ Редактирай</button>
+                <button class="btn-icon" id="mapBtn">🗺️ Карта</button>
+                <button class="btn-icon btn-back" id="backBtn">← Назад</button>
+            </div>
+        </div>
+
+        <div class="slide-container">
+            <div class="slide" id="slideContent"></div>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-button" id="prevBtn" disabled>
+                ← Предишен
+            </button>
+            
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <button class="nav-button" id="nextBtn">
+                Следващ →
+            </button>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="comments-section" id="commentsSection">
+        <div class="comments-header">
+            <h2>💬 Коментари</h2>
+            <span class="comments-count" id="commentsCount">0</span>
+        </div>
+
+        <!-- Comment Form (only for logged in users) -->
+        <div class="comment-form" id="commentForm" style="display:none;">
+            <textarea 
+                id="commentInput" 
+                placeholder="Напишете вашия коментар..."
+                rows="4"
+            ></textarea>
+            <div class="comment-form-actions">
+                <button class="btn-cancel" id="cancelReplyBtn" style="display:none;">Откажи</button>
+                <button class="btn-submit" id="submitCommentBtn">Добави коментар</button>
+            </div>
+        </div>
+
+        <!-- Comments List -->
+        <div class="comments-list" id="commentsList">
+            <div class="loading">Зареждане на коментари...</div>
+        </div>
+    </div>
+
+    <div class="shortcuts-info" id="shortcutsInfo">
+        <p><strong>⌨️ Клавишни комбинации:</strong></p>
+        <p>← / → : Навигация</p>
+        <p>F : Fullscreen</p>
+        <p>Ctrl+E : Редактирай</p>
+        <p>Esc : Изход</p>
+    </div>
+
+    <script src="../shared/config.js"></script>
+    <script src="../shared/AuthService.js"></script>
+    <script src="../shared/APIService.js"></script>
+    <script type="module" src="../presentationBridge.js"></script>
+    <script type="module" src="viewer.js"></script>
+    <script>
+        let presentationId = null;
+        let currentUser = null;
+        let replyToCommentId = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            presentationId = urlParams.get('id');
+
+            if (!presentationId) {
+                alert('Няма избрана презентация');
+                return;
+            }
+
+            if (authService.isAuthenticated()) {
+                currentUser = await authService.getCurrentUser();
+                document.getElementById('commentForm').style.display = 'block';
+                
+                checkEditPermissions();
+            }
+
+            await loadComments();
+
+            document.getElementById('submitCommentBtn').addEventListener('click', submitComment);
+            document.getElementById('cancelReplyBtn').addEventListener('click', cancelReply);
+        });
+
+        async function checkEditPermissions() {
+            try {
+                const presentation = await apiService.getPresentation(presentationId);
+                if (presentation.user_id === currentUser.id || authService.isAdmin()) {
+                    document.getElementById('editBtn').style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Error checking permissions:', error);
+            }
+        }
+
+        async function loadComments() {
+            try {
+                const comments = await apiService.getComments(presentationId);
+                renderComments(comments);
+                document.getElementById('commentsCount').textContent = comments.length;
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                document.getElementById('commentsList').innerHTML = 
+                    '<div class="no-comments">Грешка при зареждане на коментарите</div>';
+            }
+        }
+
+        function renderComments(comments) {
+            const container = document.getElementById('commentsList');
+            
+            if (!comments || comments.length === 0) {
+                container.innerHTML = '<div class="no-comments">Все още няма коментари. Бъдете първият!</div>';
+                return;
+            }
+
+            const parentComments = comments.filter(c => !c.parent_comment_id);
+            const replies = comments.filter(c => c.parent_comment_id);
+
+            let html = '';
+            
+            parentComments.forEach(comment => {
+                html += renderComment(comment);
+
+                const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
+                commentReplies.forEach(reply => {
+                    html += renderComment(reply, true);
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderComment(comment, isReply = false) {
+            const canDelete = currentUser && (comment.user_id === currentUser.id || authService.isAdmin());
+            const canReply = currentUser && !isReply;
+
+            return `
+                <div class="comment ${isReply ? 'reply' : ''}">
+                    <div class="comment-header">
+                        <span class="comment-author">${escapeHtml(comment.username || 'Unknown')}</span>
+                        <span class="comment-date">${formatDate(comment.created_at)}</span>
+                    </div>
+                    <div class="comment-content">${escapeHtml(comment.comment)}</div>
+                    <div class="comment-actions">
+                        ${canReply ? `<button class="comment-action-btn" onclick="replyToComment(${comment.id}, '${escapeHtml(comment.username)}')">Отговори</button>` : ''}
+                        ${canDelete ? `<button class="comment-action-btn delete" onclick="deleteComment(${comment.id})">Изтрий</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function submitComment() {
+            const content = document.getElementById('commentInput').value.trim();
+            
+            if (!content) {
+                alert('Моля, напишете коментар');
+                return;
+            }
+
+            if (!currentUser) {
+                alert('Трябва да сте влезли в профила си');
+                return;
+            }
+
+            try {
+                document.getElementById('submitCommentBtn').disabled = true;
+                document.getElementById('submitCommentBtn').textContent = 'Изпращане...';
+
+                await apiService.addComment(presentationId, content, replyToCommentId);
+                
+                document.getElementById('commentInput').value = '';
+                cancelReply();
+                
+                await loadComments();
+                
+                document.getElementById('commentsSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                alert('Грешка при добавяне на коментар: ' + (error.message || 'Неизвестна грешка'));
+            } finally {
+                document.getElementById('submitCommentBtn').disabled = false;
+                document.getElementById('submitCommentBtn').textContent = 'Добави коментар';
+            }
+        }
+
+        function replyToComment(commentId, username) {
+            replyToCommentId = commentId;
+            document.getElementById('commentInput').placeholder = `Отговор на ${username}...`;
+            document.getElementById('commentInput').focus();
+            document.getElementById('cancelReplyBtn').style.display = 'inline-block';
+            document.getElementById('submitCommentBtn').textContent = 'Отговори';
+        }
+
+        function cancelReply() {
+            replyToCommentId = null;
+            document.getElementById('commentInput').placeholder = 'Напишете вашия коментар...';
+            document.getElementById('cancelReplyBtn').style.display = 'none';
+            document.getElementById('submitCommentBtn').textContent = 'Добави коментар';
+        }
+
+        async function deleteComment(commentId) {
+            if (!confirm('Сигурни ли сте, че искате да изтриете този коментар?')) {
+                return;
+            }
+
+            try {
+                await apiService.deleteComment(commentId);
+                await loadComments();
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                alert('Грешка при изтриване на коментар');
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return 'Преди малко';
+            if (diffInSeconds < 3600) return `Преди ${Math.floor(diffInSeconds / 60)} мин`;
+            if (diffInSeconds < 86400) return `Преди ${Math.floor(diffInSeconds / 3600)} ч`;
+            if (diffInSeconds < 604800) return `Преди ${Math.floor(diffInSeconds / 86400)} дни`;
+            
+            return date.toLocaleDateString('bg-BG', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+
+</html>

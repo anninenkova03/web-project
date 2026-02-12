@@ -172,11 +172,16 @@ async function handleSave() {
             });
             showStatus('Презентацията е обновена в облака', 'success');
         } else {
-            // ✅ CREATE new presentation using the existing /api/generate endpoint
-            // Note: The backend expects { slim: content } – not the full object!
+            // ✅ CREATE – inject #presentation and #presentationType so SlimParser
+            // reads the correct title/type (otherwise defaults to Untitled/lecture)
+            const slimWithMeta = buildSlimWithMeta(
+                presentation.content,
+                presentation.title,
+                presentation.type
+            );
             serverResponse = await apiService.request('/api/generate', {
                 method: 'POST',
-                body: JSON.stringify({ slim: presentation.content })
+                body: JSON.stringify({ slim: slimWithMeta })
             });
             
             // Extract the new presentation ID (adjust path based on your backend response)
@@ -204,6 +209,25 @@ async function handleSave() {
 function extractDescription(content) {
     const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
     return lines.slice(0, 2).join(' ').substring(0, 200) || 'Няма описание';
+}
+
+// Helper: prepend #presentation and #presentationType so SlimParser
+// on the backend reads the correct title and type from the editor fields.
+// Also removes any manually written #presentation / #presentationType lines
+// so they are never duplicated.
+function buildSlimWithMeta(content, title, type) {
+    const cleaned = content
+        .split('\n')
+        .filter(l => {
+            const t = l.trimStart();
+            return !t.startsWith('#presentation ') &&
+                   !t.startsWith('#presentationType ') &&
+                   t !== '#presentation' &&
+                   t !== '#presentationType';
+        })
+        .join('\n');
+
+    return `#presentation ${title}\n#presentationType ${type}\n${cleaned}`;
 }
 
 function handleValidate() {

@@ -57,19 +57,18 @@ class APIService {
             const url = `${this.baseURL}${endpoint}`;
             console.log('[API]', options.method || 'GET', url);
 
-            // Build headers: auth header LAST so it is never overwritten
+            // ✅ Always include auth header if token exists
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                ...options.headers,
-                ...this.getAuthHeader()   // always last – cannot be overwritten
+                ...this.getAuthHeader(),   // <-- this is the fix
+                ...options.headers
             };
 
-            // Spread options FIRST, then override headers and credentials
             const response = await fetch(url, {
-                ...options,
                 credentials: 'include',
-                headers
+                headers: headers,
+                ...options
             });
 
             const text = await response.text();
@@ -83,10 +82,7 @@ class APIService {
             const data = JSON.parse(text);
 
             if (!response.ok) {
-                const msg = data.error
-                    || (data.errors ? Object.values(data.errors).flat().join(', ') : null)
-                    || `HTTP ${response.status}`;
-                throw new Error(msg);
+                throw new Error(data.error || `HTTP ${response.status}`);
             }
 
             return data;
@@ -104,18 +100,10 @@ class APIService {
         return data;
     }
 
-    async createPresentation(data) {
-        // data should contain: title, type, content, description (optional)
-        return await this.request('/api/presentations', {
+    async generatePresentation(slimContent) {
+        return await this.request('/api/generate', {
             method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
-
-    async updatePresentation(id, data) {
-        return await this.request(`/api/presentation?id=${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
+            body: JSON.stringify({ slim: slimContent })
         });
     }
 
