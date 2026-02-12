@@ -116,9 +116,7 @@ class AuthController {
             $stmt->execute([$data['login'], $data['login']]);
             $user = $stmt->fetch();
 
-            if (!$user) {
-                sprintf($data['password']);
-                sprintf($user['password']);
+            if (!$user || !password_verify($data['password'], $user['password'])) {
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,

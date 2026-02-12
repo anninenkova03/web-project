@@ -196,10 +196,10 @@ CREATE TABLE presentation_stats (
 
 
 INSERT INTO users (username, email, password, full_name, role) VALUES
-('admin', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin');
+('admin', 'admin@example.com', '$2y$10$anE0Mbe.sf9uti6Lf9U2JOsC1rl55t1AQN5kd1OEMCgXM9z//iUYq', 'System Administrator', 'admin');
 
 INSERT INTO users (username, email, password, full_name, role) VALUES
-('demo_user', 'user@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo User', 'user');
+('demo_user', 'user@example.com', '$2y$10$KjYNrz/srQcDUVddE1XRvevmv868qSlSNgI5A6N73HNfYRGWNX6nG', 'Demo User', 'user');
 
 INSERT INTO tags (name, slug) VALUES
 ('HTML', 'html'),
