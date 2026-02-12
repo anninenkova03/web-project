@@ -1,4 +1,4 @@
-// ==================== EDITOR – MERGED VERSION ====================
+// ==================== EDITOR – DIRECT DATABASE SAVE ====================
 let fileManager;
 let validator;
 let autoSaveInterval;
@@ -8,7 +8,6 @@ let currentTheme = 'light';
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Editor initialization...');
 
-    // ✅ Authentication check (from second script)
     if (typeof authService === 'undefined' || !authService.isAuthenticated()) {
         alert('Трябва да влезете в профила си');
         window.location.href = '../auth/auth.html';
@@ -52,6 +51,10 @@ function initializeUI() {
         option.textContent = type.label;
         typeSelect.appendChild(option);
     });
+
+    // ❌ Hide the "Generate" button completely
+    const generateBtn = document.getElementById('btn-generate');
+    if (generateBtn) generateBtn.style.display = 'none';
 }
 
 function setupEventListeners() {
@@ -59,7 +62,6 @@ function setupEventListeners() {
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
-    document.getElementById('btn-generate').addEventListener('click', handleGenerate);
     document.getElementById('btn-validate').addEventListener('click', handleValidate);
     document.getElementById('btn-preview').addEventListener('click', handlePreview);
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
@@ -123,60 +125,85 @@ function handleOpen() {
     fileManager.showImportDialog();
 }
 
-function handleSave() {
+async function handleSave() {
     const editor = document.getElementById('slim-editor');
     const titleInput = document.getElementById('presentation-title');
+    const typeSelect = document.getElementById('presentation-type');
 
     const content = editor.value;
     const title = titleInput.value || 'Без име';
+    const type = typeSelect.value;
 
     if (!content.trim()) {
         alert('Няма съдържание за запазване!');
         return;
     }
 
-    fileManager.save(content, title);
-    updateStatus(`💾 Запазена локално: ${title}`);
-    showStatus('Презентацията е запазена локално', 'success');
-    loadFileList();
-}
-
-async function handleGenerate() {
-    console.log('Generate clicked!');
-
-    const slimCode = document.getElementById('slim-editor').value;
-
-    if (!slimCode.trim()) {
-        alert('❌ Няма съдържание!');
-        return;
+    // 1. Save locally
+    const savedPresentation = fileManager.save(content, title);
+    if (savedPresentation) {
+        savedPresentation.type = type;
+        fileManager.update(savedPresentation);
     }
 
+    updateStatus(`💾 Запазена локално: ${title}`);
+    showStatus('Запазване в облака...', 'info');
+
+    // 2. Sync with backend
     try {
-        if (!authService.isAuthenticated()) {
-            throw new Error('Not authenticated! Please login first.');
+        const presentation = fileManager.getCurrentFile();
+        if (!presentation) throw new Error('Няма активна презентация');
+
+        // Prepare data for API
+        const presentationData = {
+            title: presentation.title,
+            type: presentation.type,
+            content: presentation.content,
+            description: extractDescription(presentation.content)
+        };
+
+        let serverResponse;
+        
+        if (presentation.serverId) {
+            // ✅ UPDATE existing presentation
+            serverResponse = await apiService.request(`/api/presentation?id=${presentation.serverId}`, {
+                method: 'PUT',
+                body: JSON.stringify(presentationData)
+            });
+            showStatus('Презентацията е обновена в облака', 'success');
+        } else {
+            // ✅ CREATE new presentation using the existing /api/generate endpoint
+            // Note: The backend expects { slim: content } – not the full object!
+            serverResponse = await apiService.request('/api/generate', {
+                method: 'POST',
+                body: JSON.stringify({ slim: presentation.content })
+            });
+            
+            // Extract the new presentation ID (adjust path based on your backend response)
+            const newId = serverResponse.data?.id || serverResponse.id;
+            if (newId) {
+                presentation.serverId = newId;
+                fileManager.update(presentation);
+                showStatus('Презентацията е качена в облака', 'success');
+            } else {
+                throw new Error('Невалиден отговор от сървъра – липсва ID');
+            }
         }
 
-        console.log('Sending SLIM code to API...');
-        console.log('Length:', slimCode.length);
-
-        const btn = document.getElementById('btn-generate');
-        btn.disabled = true;
-        btn.textContent = '⏳ Generating...';
-
-        const response = await apiService.generatePresentation(slimCode);
-        console.log('Response:', response);
-
-        alert('✅ Presentation generated successfully!');
-        window.location.href = '../dashboard/dashboard.html';
-
+        updateStatus(`☁️ Запазена в облак: ${title}`);
     } catch (error) {
-        console.error('Generate error:', error);
-        alert('❌ Failed to generate presentation!\n\nError: ' + error.message);
+        console.error('Backend save error:', error);
+        showStatus('❌ Грешка при запазване в облак: ' + error.message, 'error');
+        // Local save still succeeded
     } finally {
-        const btn = document.getElementById('btn-generate');
-        btn.disabled = false;
-        btn.textContent = '⚙️ Generate';
+        loadFileList();
     }
+}
+
+// Helper: extract first few lines as description
+function extractDescription(content) {
+    const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    return lines.slice(0, 2).join(' ').substring(0, 200) || 'Няма описание';
 }
 
 function handleValidate() {
@@ -327,12 +354,13 @@ function loadFileList() {
 
     fileList.innerHTML = presentations.map(p => {
         const isActive = p.id === fileManager.getCurrentFile()?.id;
+        const cloudIcon = p.serverId ? '☁️ ' : '';
         return `
             <div class="file-item ${isActive ? 'active' : ''}"
                  data-id="${p.id}"
                  onclick="loadPresentation('${p.id}')"
                  oncontextmenu="showContextMenu(event, '${p.id}'); return false;">
-                <div class="file-name">${escapeHtml(p.title)}</div>
+                <div class="file-name">${cloudIcon}${escapeHtml(p.title)}</div>
                 <div class="file-meta">
                     ${p.slideCount} слайда • ${p.type}
                     <br>
@@ -368,8 +396,9 @@ function loadPresentationInEditor(presentation) {
     loadFileList();
 }
 
-// ---------- Context menu ----------
+// ---------- Context menu (unchanged) ----------
 function showContextMenu(e, presentationId) {
+    // ... (same as before, no changes needed)
     e.preventDefault();
     e.stopPropagation();
 
@@ -414,8 +443,6 @@ function showContextMenu(e, presentationId) {
     `;
 
     document.body.appendChild(menu);
-
-    // Ensure menu stays within viewport
     setTimeout(() => {
         const rect = menu.getBoundingClientRect();
         if (rect.right > window.innerWidth) {
@@ -425,7 +452,6 @@ function showContextMenu(e, presentationId) {
             menu.style.top = `${window.innerHeight - rect.height - 10}px`;
         }
     }, 0);
-
     setTimeout(() => {
         document.addEventListener('click', closeContextMenu);
         document.addEventListener('contextmenu', closeContextMenu);
@@ -445,6 +471,11 @@ function deletePresentation(id) {
 
     if (!confirm(`Сигурни ли сте, че искате да изтриете:\n\n"${presentation.title}"\n\nТова действие не може да бъде отменено!`)) {
         return;
+    }
+
+    // Also delete from server if it exists there
+    if (presentation.serverId) {
+        apiService.deletePresentation(presentation.serverId).catch(console.error);
     }
 
     fileManager.delete(id);
@@ -486,12 +517,14 @@ function exportPresentation(id) {
 }
 
 function viewInDashboard(id) {
-    handleSave();
-    window.location.href = `../dashboard/dashboard.html`;
+    handleSave().then(() => {
+        window.location.href = `../dashboard/dashboard.html`;
+    });
 }
 
-// ---------- Preview parsing ----------
+// ---------- Preview parsing (unchanged) ----------
 function parseSlimContent(content) {
+    // ... (same as before)
     const lines = content.split('\n');
     const slides = [];
     let currentSlide = null;
@@ -527,6 +560,7 @@ function parseSlimContent(content) {
 }
 
 function generatePreviewHTML(slides) {
+    // ... (same as before)
     return slides.map((slide, index) => `
         <div class="preview-slide" style="
             margin-bottom: 30px;
@@ -547,6 +581,7 @@ function generatePreviewHTML(slides) {
 }
 
 function generateSlideContent(slide) {
+    // ... (same as before)
     switch (slide.type) {
         case 'title':
             return `
@@ -616,10 +651,6 @@ function handleKeyboardShortcuts(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
         e.preventDefault();
         handlePreview();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-        e.preventDefault();
-        handleGenerate();
     }
     if (e.key === 'Escape') {
         closePreview();
@@ -736,4 +767,4 @@ window.viewInDashboard = viewInDashboard;
 window.showContextMenu = showContextMenu;
 window.closeContextMenu = closeContextMenu;
 
-console.log('Editor script loaded (merged version)');
+console.log('Editor script loaded (direct database save)');

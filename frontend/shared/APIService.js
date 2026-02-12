@@ -100,10 +100,18 @@ class APIService {
         return data;
     }
 
-    async generatePresentation(slimContent) {
-        return await this.request('/api/generate', {
+    async createPresentation(data) {
+        // data should contain: title, type, content, description (optional)
+        return await this.request('/api/presentations', {
             method: 'POST',
-            body: JSON.stringify({ slim: slimContent })
+            body: JSON.stringify(data)
+        });
+    }
+
+    async updatePresentation(id, data) {
+        return await this.request(`/api/presentation?id=${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
         });
     }
 

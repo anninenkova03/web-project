@@ -602,6 +602,21 @@ class FileManager {
         this.isDirty = true;
     }
 
+    markSaved() {
+        this.isDirty = false;
+    }
+    
+    // ---------- Update an existing presentation (replace its data) ----------
+    update(updatedPresentation) {
+        const index = this.presentations.findIndex(p => p.id === updatedPresentation.id);
+        if (index !== -1) {
+            this.presentations[index] = updatedPresentation;
+            this.saveToStorage();
+            return true;
+        }
+        return false;
+    }
+
     hasUnsavedChanges() {
         return this.isDirty;
     }
