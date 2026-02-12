@@ -131,7 +131,7 @@ async function handleSave() {
     const typeSelect = document.getElementById('presentation-type');
 
     const content = editor.value;
-    const title = titleInput.value || 'Без име';
+    const title = titleInput.value.trim() || 'Без име';
     const type = typeSelect.value;
 
     if (!content.trim()) {
@@ -139,7 +139,7 @@ async function handleSave() {
         return;
     }
 
-    // 1. Save locally
+    // 1. Локално запазване
     const savedPresentation = fileManager.save(content, title);
     if (savedPresentation) {
         savedPresentation.type = type;
@@ -149,57 +149,83 @@ async function handleSave() {
     updateStatus(`💾 Запазена локално: ${title}`);
     showStatus('Запазване в облака...', 'info');
 
-    // 2. Sync with backend
     try {
         const presentation = fileManager.getCurrentFile();
         if (!presentation) throw new Error('Няма активна презентация');
 
-        // Prepare data for API
-        const presentationData = {
+        // --- Общи данни за API ---
+        const fullData = {
+            slim: presentation.content,          // ← винаги изпращаме slim!
             title: presentation.title,
             type: presentation.type,
-            content: presentation.content,
             description: extractDescription(presentation.content)
         };
 
-        let serverResponse;
-        
         if (presentation.serverId) {
-            // ✅ UPDATE existing presentation
-            serverResponse = await apiService.request(`/api/presentation?id=${presentation.serverId}`, {
-                method: 'PUT',
-                body: JSON.stringify(presentationData)
-            });
-            showStatus('Презентацията е обновена в облака', 'success');
-        } else {
-            // ✅ CREATE – inject #presentation and #presentationType so SlimParser
-            // reads the correct title/type (otherwise defaults to Untitled/lecture)
-            const slimWithMeta = buildSlimWithMeta(
-                presentation.content,
-                presentation.title,
-                presentation.type
-            );
-            serverResponse = await apiService.request('/api/generate', {
-                method: 'POST',
-                body: JSON.stringify({ slim: slimWithMeta })
-            });
-            
-            // Extract the new presentation ID (adjust path based on your backend response)
-            const newId = serverResponse.data?.id || serverResponse.id;
-            if (newId) {
-                presentation.serverId = newId;
-                fileManager.update(presentation);
-                showStatus('Презентацията е качена в облака', 'success');
-            } else {
-                throw new Error('Невалиден отговор от сървъра – липсва ID');
+            // ✅ Актуализация на съществуваща презентация
+            try {
+                await apiService.request(`/api/presentation?id=${presentation.serverId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(fullData)
+                });
+                showStatus('Презентацията е обновена в облака', 'success');
+            } catch (updateError) {
+                // Ако презентацията не съществува в базата данни (404), създай нова
+                if (updateError.message && updateError.message.includes('не е намерена')) {
+                    console.warn('Presentation not found in database, creating new one');
+                    presentation.serverId = null; // Изчисти невалидния ID
+                    
+                    // Създай нова презентация
+                    const createResponse = await apiService.request('/api/generate', {
+                        method: 'POST',
+                        body: JSON.stringify({ slim: presentation.content })
+                    });
+
+                    const newId = createResponse.data?.id || createResponse.id;
+                    if (!newId) {
+                        throw new Error('Сървърът не върна ID на новата презентация');
+                    }
+
+                    // Обнови с пълните данни
+                    await apiService.request(`/api/presentation?id=${newId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(fullData)
+                    });
+
+                    presentation.serverId = newId;
+                    fileManager.update(presentation);
+                    showStatus('Презентацията е качена в облака (създадена нова)', 'success');
+                } else {
+                    throw updateError; // Препредай други грешки
+                }
             }
+        } else {
+            // ✅ Нова презентация – първо създаване
+            const createResponse = await apiService.request('/api/generate', {
+                method: 'POST',
+                body: JSON.stringify({ slim: presentation.content })
+            });
+
+            const newId = createResponse.data?.id || createResponse.id;
+            if (!newId) {
+                throw new Error('Сървърът не върна ID на новата презентация');
+            }
+
+            // ✅ Веднага обновяване с пълните данни (заглавие, тип и т.н.)
+            await apiService.request(`/api/presentation?id=${newId}`, {
+                method: 'PUT',
+                body: JSON.stringify(fullData)
+            });
+
+            presentation.serverId = newId;
+            fileManager.update(presentation);
+            showStatus('Презентацията е качена в облака', 'success');
         }
 
-        updateStatus(`☁️ Запазена в облак: ${title}`);
+        updateStatus(`☁️ Запазена в облак: ${presentation.title}`);
     } catch (error) {
         console.error('Backend save error:', error);
         showStatus('❌ Грешка при запазване в облак: ' + error.message, 'error');
-        // Local save still succeeded
     } finally {
         loadFileList();
     }
@@ -209,25 +235,6 @@ async function handleSave() {
 function extractDescription(content) {
     const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
     return lines.slice(0, 2).join(' ').substring(0, 200) || 'Няма описание';
-}
-
-// Helper: prepend #presentation and #presentationType so SlimParser
-// on the backend reads the correct title and type from the editor fields.
-// Also removes any manually written #presentation / #presentationType lines
-// so they are never duplicated.
-function buildSlimWithMeta(content, title, type) {
-    const cleaned = content
-        .split('\n')
-        .filter(l => {
-            const t = l.trimStart();
-            return !t.startsWith('#presentation ') &&
-                   !t.startsWith('#presentationType ') &&
-                   t !== '#presentation' &&
-                   t !== '#presentationType';
-        })
-        .join('\n');
-
-    return `#presentation ${title}\n#presentationType ${type}\n${cleaned}`;
 }
 
 function handleValidate() {

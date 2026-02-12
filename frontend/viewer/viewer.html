@@ -75,7 +75,8 @@
     <script src="../shared/config.js"></script>
     <script src="../shared/AuthService.js"></script>
     <script src="../shared/APIService.js"></script>
-    <script src="viewer.js"></script>
+    <script type="module" src="../presentationBridge.js"></script>
+    <script type="module" src="viewer.js"></script>
     <script>
         let presentationId = null;
         let currentUser = null;
@@ -116,9 +117,14 @@
 
         async function loadComments() {
             try {
-                const comments = await apiService.getComments(presentationId);
-                renderComments(comments);
-                document.getElementById('commentsCount').textContent = comments.length;
+                const response = await apiService.getComments(presentationId);
+                const comments = response.data || response || [];
+                
+                // Ensure comments is an array
+                const commentsArray = Array.isArray(comments) ? comments : [];
+                
+                renderComments(commentsArray);
+                document.getElementById('commentsCount').textContent = commentsArray.length;
             } catch (error) {
                 console.error('Error loading comments:', error);
                 document.getElementById('commentsList').innerHTML = 

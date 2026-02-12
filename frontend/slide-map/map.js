@@ -23,7 +23,23 @@ async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = Number(urlParams.get('id'));
     
-    currentPresentation = presentationBridge.getPresentationById(presentationId);
+    // Load directly from API first
+    try {
+        const apiService = window.apiService;
+        if (apiService) {
+            const response = await apiService.getPresentation(presentationId);
+            if (response && response.data) {
+                currentPresentation = convertApiToMapFormat(response.data);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load from API:', error);
+    }
+
+    // Fallback to localStorage
+    if (!currentPresentation) {
+        currentPresentation = presentationBridge.getPresentationById(presentationId);
+    }
     
     if (!currentPresentation) {
         currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
@@ -39,6 +55,16 @@ async function init() {
     updateStats();
     renderMap();
     setupEventListeners();
+}
+
+function convertApiToMapFormat(apiData) {
+    // Convert API presentation format to map format
+    return {
+        id: apiData.id,
+        title: apiData.title,
+        type: apiData.type || 'lecture',
+        slides: apiData.slides || []
+    };
 }
 
 function updateHeader() {
