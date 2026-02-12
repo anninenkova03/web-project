@@ -339,13 +339,12 @@
 
         async function loadDashboardData() {
             try {
-                const stats = await apiService.getAdminDashboard();
+                const response = await apiService.getAdminDashboard();
+                const stats = response.data ?? response;
+
                 updateStatistics(stats);
-
                 await loadUsers();
-
                 await loadPopularPresentations(stats);
-
                 await loadRecentActivity(stats);
             } catch (error) {
                 console.error('Error loading admin data:', error);

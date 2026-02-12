@@ -28,11 +28,12 @@ class AdminController {
                 ORDER BY al.created_at DESC
                 LIMIT 10
             ");
-            $stats['recent_activities'] = $stmt->fetchAll();
+            $stats['recent_activity'] = $stmt->fetchAll();
 
             $stmt = $db->query("
                 SELECT p.*, u.username,
-                    (SELECT COUNT(*) FROM presentation_likes pl WHERE pl.presentation_id = p.id) as likes
+                    (SELECT COUNT(*) FROM presentation_likes pl WHERE pl.presentation_id = p.id) as likes_count,
+                    (SELECT COUNT(*) FROM comments c WHERE c.presentation_id = p.id AND c.is_deleted = FALSE) as comments_count
                 FROM presentations p
                 JOIN users u ON p.user_id = u.id
                 ORDER BY p.view_count DESC
