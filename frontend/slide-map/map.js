@@ -59,11 +59,35 @@ async function init() {
 
 function convertApiToMapFormat(apiData) {
     // Convert API presentation format to map format
+    const slides = (apiData.slides || []).map((slide, index) => {
+        // Extract title from data or generate one
+        let title = 'Slide ' + (index + 1);
+        if (slide.data && slide.data.title) {
+            title = slide.data.title;
+        } else if (slide.data && slide.data.heading) {
+            title = slide.data.heading;
+        } else if (slide.data && slide.data.text) {
+            title = slide.data.text.substring(0, 50);
+        }
+        
+        return {
+            id: slide.id,
+            order: slide.order || index + 1,
+            type: slide.type || 'content',
+            title: title,
+            data: slide.data || {},
+            previous: index > 0 ? (apiData.slides[index - 1].id) : null,
+            next: index < apiData.slides.length - 1 ? (apiData.slides[index + 1].id) : null
+        };
+    });
+    
     return {
         id: apiData.id,
-        title: apiData.title,
+        title: apiData.title || 'Untitled Presentation',
         type: apiData.type || 'lecture',
-        slides: apiData.slides || []
+        author: apiData.username || 'Unknown',
+        date: apiData.created_at,
+        slides: slides
     };
 }
 
