@@ -1,4 +1,4 @@
-import { PRESENTATIONS } from '../data.js';
+// import { PRESENTATIONS } from '../data.js';
 import { presentationBridge } from '../presentationBridge.js';
 
 let currentPresentation = null;
@@ -41,9 +41,9 @@ async function init() {
         currentPresentation = presentationBridge.getPresentationById(presentationId);
     }
     
-    if (!currentPresentation) {
-        currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
-    }
+    // if (!currentPresentation) {
+    //     currentPresentation = PRESENTATIONS.find(p => p.id === presentationId);
+    // }
 
     if (!currentPresentation) {
         alert('Презентацията не е намерена');
