@@ -14,6 +14,14 @@ class SlimParser {
         $order = 0;
 
         foreach ($lines as $line) {
+            if (str_starts_with($line, '#presentationType')) {
+                $parts = explode(' ', $line, 2);
+                if (isset($parts[1])) {
+                    $type = trim($parts[1]);
+                }
+                continue;
+            }
+
             if (str_starts_with($line, '#presentation')) {
                 $parts = explode(' ', $line, 2);
                 if (isset($parts[1])) {
@@ -26,14 +34,6 @@ class SlimParser {
                 $parts = explode(' ', $line, 2);
                 if (isset($parts[1])) {
                     $slug = trim($parts[1]);
-                }
-                continue;
-            }
-            
-            if (str_starts_with($line, '#presentationType')) {
-                $parts = explode(' ', $line, 2);
-                if (isset($parts[1])) {
-                    $type = trim($parts[1]);
                 }
                 continue;
             }
