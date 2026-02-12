@@ -1,12 +1,11 @@
 class APIService {
     constructor() {
         this.baseURL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : this.detectBaseURL();
-        this.tokenKey = 'auth_token'; // same as AuthService
-        this.cache = new Map();        // ✅ initialize cache
+        this.tokenKey = 'auth_token';
+        this.cache = new Map();
         console.log('[APIService] Base URL:', this.baseURL);
     }
 
-    // ----- Copy the exact same detection logic from AuthService -----
     detectBaseURL() {
         try {
             let scriptUrl = null;
@@ -41,12 +40,10 @@ class APIService {
         return `${origin}/backend/public`.replace(/\/$/, '');
     }
 
-    // ✅ Get token directly from localStorage (same as AuthService)
     getToken() {
         return localStorage.getItem(this.tokenKey);
     }
 
-    // ✅ Build auth header
     getAuthHeader() {
         const token = this.getToken();
         return token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -57,15 +54,13 @@ class APIService {
             const url = `${this.baseURL}${endpoint}`;
             console.log('[API]', options.method || 'GET', url);
 
-            // Build headers: auth header LAST so it is never overwritten
             const headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 ...options.headers,
-                ...this.getAuthHeader()   // always last – cannot be overwritten
+                ...this.getAuthHeader()
             };
 
-            // Spread options FIRST, then override headers and credentials
             const response = await fetch(url, {
                 ...options,
                 credentials: 'include',
@@ -74,7 +69,6 @@ class APIService {
 
             const text = await response.text();
 
-            // Detect HTML error pages (PHP errors or 404 pages)
             if (text.trim().startsWith('<')) {
                 console.error('[API] Server returned HTML:', text.slice(0, 300));
                 throw new Error('Backend returned HTML instead of JSON. Check server logs for PHP errors.');
@@ -97,7 +91,6 @@ class APIService {
         }
     }
 
-    // ----- Presentation endpoints -----
     async getPresentations(filters = {}) {
         const params = new URLSearchParams(filters);
         const data = await this.request(`/api/presentations?${params}`);
@@ -105,7 +98,6 @@ class APIService {
     }
 
     async createPresentation(data) {
-        // data should contain: title, type, content, description (optional)
         return await this.request('/api/presentations', {
             method: 'POST',
             body: JSON.stringify(data)
@@ -154,7 +146,6 @@ class APIService {
         return await this.request('/api/favorites');
     }
 
-    // ----- Comments -----
     async getComments(presentationId) {
         return await this.request(`/api/presentation/comments?id=${presentationId}`);
     }
@@ -170,12 +161,10 @@ class APIService {
         return await this.request(`/api/comment?id=${commentId}`, { method: 'DELETE' });
     }
 
-    // ----- History -----
     async getHistory(presentationId) {
         return await this.request(`/api/presentation/history?id=${presentationId}`);
     }
 
-    // ----- Admin endpoints -----
     async getAdminDashboard() {
         return await this.request('/api/admin/dashboard');
     }
@@ -203,12 +192,10 @@ class APIService {
         return await this.request(`/api/admin/logs?page=${page}&limit=${limit}`);
     }
 
-    // ----- Cache -----
     clearCache() {
         this.cache.clear();
     }
 
-    // ----- Health check -----
     async healthCheck() {
         try {
             const response = await this.request('/api/health');

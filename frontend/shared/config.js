@@ -1,7 +1,5 @@
-// config.js – shared configuration
 window.APP_CONFIG = (function() {
     function detectBaseURL() {
-        // ----- Script path detection (looking for 'frontend') -----
         try {
             let scriptUrl = null;
             if (document.currentScript) {
@@ -26,7 +24,6 @@ window.APP_CONFIG = (function() {
             }
         } catch (e) {}
 
-        // Fallback: window.location
         const origin = window.location.origin;
         let pathname = window.location.pathname;
         const frontendPos = pathname.indexOf('/frontend');
@@ -35,7 +32,6 @@ window.APP_CONFIG = (function() {
             return `${origin}${projectPath}/backend/public`.replace(/\/$/, '');
         }
 
-        // Last resort – maybe you set a manual override?
         return `${origin}/backend/public`.replace(/\/$/, '');
     }
 

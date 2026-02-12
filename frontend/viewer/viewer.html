@@ -119,8 +119,7 @@
             try {
                 const response = await apiService.getComments(presentationId);
                 const comments = response.data || response || [];
-                
-                // Ensure comments is an array
+
                 const commentsArray = Array.isArray(comments) ? comments : [];
                 
                 renderComments(commentsArray);

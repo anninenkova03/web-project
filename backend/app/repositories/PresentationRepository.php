@@ -33,28 +33,20 @@ class PresentationRepository {
         return $stmt->fetchAll();
     }
     
-    /**
-     * Search presentations with filtering, pagination, and access control.
-     */
     public function search(array $filters): array {
         $currentUserId = Auth::id() ?? 0;
 
-        // ✅ ALWAYS initialize $params as an empty array
         $params = [];
 
-        // Build WHERE clause based on user permissions
         if (Auth::isAdmin()) {
             $where = ["1=1"];
-            // No initial parameters needed for admin
         } else if ($currentUserId > 0) {
             $where = ["(p.is_public = TRUE OR p.user_id = ?)"];
             $params[] = $currentUserId;
         } else {
             $where = ["p.is_public = TRUE"];
-            // No parameters for public only
         }
-        
-        // Apply search filter
+
         if (!empty($filters['search'])) {
             $where[] = "(MATCH(p.title, p.description) AGAINST(? IN NATURAL LANGUAGE MODE) 
                         OR p.title LIKE ? 
@@ -64,26 +56,22 @@ class PresentationRepository {
             $params[] = '%' . $searchTerm . '%';
             $params[] = '%' . $searchTerm . '%';
         }
-        
-        // Apply type filter
+
         if (!empty($filters['type'])) {
             $where[] = "p.presentation_type = ?";
             $params[] = $filters['type'];
         }
-        
-        // Apply user filter
+
         if (isset($filters['user_id'])) {
             $where[] = "p.user_id = ?";
             $params[] = $filters['user_id'];
         }
-        
-        // Apply featured filter
+
         if (isset($filters['featured'])) {
             $where[] = "p.is_featured = ?";
             $params[] = $filters['featured'];
         }
-        
-        // Sorting and pagination
+
         $sortBy = $filters['sort_by'] ?? 'created_at';
         $sortOrder = $filters['sort_order'] ?? 'DESC';
         $page = max(1, $filters['page'] ?? 1);
@@ -91,14 +79,12 @@ class PresentationRepository {
         $offset = ($page - 1) * $limit;
         
         $whereClause = implode(' AND ', $where);
-        
-        // Count total results
+
         $countSql = "SELECT COUNT(*) as total FROM presentations p WHERE " . $whereClause;
         $stmt = $this->db->prepare($countSql);
         $stmt->execute($params);
         $total = $stmt->fetch()['total'];
 
-        // Main query with additional info (likes, comments, etc.)
         $sql = "
             SELECT 
                 p.*,
@@ -120,12 +106,8 @@ class PresentationRepository {
             LIMIT ? OFFSET ?
         ";
         
-        // Build parameter list for the main query:
-        // Start with the two user IDs for the EXISTS checks
         $executeParams = [$currentUserId, $currentUserId];
-        // Merge with the WHERE clause parameters
         $executeParams = array_merge($executeParams, $params);
-        // Add pagination parameters
         $executeParams[] = $limit;
         $executeParams[] = $offset;
         

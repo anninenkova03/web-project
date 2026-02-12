@@ -605,8 +605,7 @@ class FileManager {
     markSaved() {
         this.isDirty = false;
     }
-    
-    // ---------- Update an existing presentation (replace its data) ----------
+
     update(updatedPresentation) {
         const index = this.presentations.findIndex(p => p.id === updatedPresentation.id);
         if (index !== -1) {

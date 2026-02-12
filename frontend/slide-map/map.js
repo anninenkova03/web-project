@@ -22,8 +22,7 @@ async function init() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = Number(urlParams.get('id'));
-    
-    // Load directly from API first
+
     try {
         const apiService = window.apiService;
         if (apiService) {
@@ -36,7 +35,6 @@ async function init() {
         console.error('Failed to load from API:', error);
     }
 
-    // Fallback to localStorage
     if (!currentPresentation) {
         currentPresentation = presentationBridge.getPresentationById(presentationId);
     }
@@ -58,9 +56,7 @@ async function init() {
 }
 
 function convertApiToMapFormat(apiData) {
-    // Convert API presentation format to map format
     const slides = (apiData.slides || []).map((slide, index) => {
-        // Extract title from data or generate one
         let title = 'Slide ' + (index + 1);
         if (slide.data && slide.data.title) {
             title = slide.data.title;

@@ -1,10 +1,8 @@
-// ==================== EDITOR – DIRECT DATABASE SAVE ====================
 let fileManager;
 let validator;
 let autoSaveInterval;
 let currentTheme = 'light';
 
-// ---------- Initialization ----------
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Editor initialization...');
 
@@ -52,13 +50,11 @@ function initializeUI() {
         typeSelect.appendChild(option);
     });
 
-    // ❌ Hide the "Generate" button completely
     const generateBtn = document.getElementById('btn-generate');
     if (generateBtn) generateBtn.style.display = 'none';
 }
 
 function setupEventListeners() {
-    // Buttons
     document.getElementById('btn-new').addEventListener('click', handleNew);
     document.getElementById('btn-open').addEventListener('click', handleOpen);
     document.getElementById('btn-save').addEventListener('click', handleSave);
@@ -67,7 +63,6 @@ function setupEventListeners() {
     document.getElementById('btn-theme').addEventListener('click', toggleTheme);
     document.getElementById('btn-refresh').addEventListener('click', loadFileList);
 
-    // Dashboard navigation
     const dashboardBtn = document.getElementById('btn-dashboard');
     if (dashboardBtn) {
         dashboardBtn.addEventListener('click', () => {
@@ -75,33 +70,27 @@ function setupEventListeners() {
         });
     }
 
-    // Editor input
     const editor = document.getElementById('slim-editor');
     editor.addEventListener('input', handleEditorChange);
     editor.addEventListener('keyup', updateCursorPosition);
     editor.addEventListener('click', updateCursorPosition);
 
-    // Metadata changes
     document.getElementById('presentation-title').addEventListener('input', handleTitleChange);
     document.getElementById('presentation-type').addEventListener('change', handleTypeChange);
 
-    // Tabs
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // Preview modal
     document.getElementById('close-preview').addEventListener('click', closePreview);
     document.getElementById('preview-modal').addEventListener('click', (e) => {
         if (e.target.id === 'preview-modal') closePreview();
     });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
 }
 
-// ---------- File operations ----------
 function handleNew() {
     if (fileManager.hasUnsavedChanges()) {
         if (!confirm('Имате незапазени промени! Искате ли да създадете нова презентация?')) {
@@ -139,7 +128,6 @@ async function handleSave() {
         return;
     }
 
-    // 1. Локално запазване
     const savedPresentation = fileManager.save(content, title);
     if (savedPresentation) {
         savedPresentation.type = type;
@@ -153,16 +141,14 @@ async function handleSave() {
         const presentation = fileManager.getCurrentFile();
         if (!presentation) throw new Error('Няма активна презентация');
 
-        // --- Общи данни за API ---
         const fullData = {
-            slim: presentation.content,          // ← винаги изпращаме slim!
+            slim: presentation.content,
             title: presentation.title,
             type: presentation.type,
             description: extractDescription(presentation.content)
         };
 
         if (presentation.serverId) {
-            // ✅ Актуализация на съществуваща презентация
             try {
                 await apiService.request(`/api/presentation?id=${presentation.serverId}`, {
                     method: 'PUT',
@@ -170,12 +156,10 @@ async function handleSave() {
                 });
                 showStatus('Презентацията е обновена в облака', 'success');
             } catch (updateError) {
-                // Ако презентацията не съществува в базата данни (404), създай нова
                 if (updateError.message && updateError.message.includes('не е намерена')) {
                     console.warn('Presentation not found in database, creating new one');
-                    presentation.serverId = null; // Изчисти невалидния ID
-                    
-                    // Създай нова презентация
+                    presentation.serverId = null;
+
                     const createResponse = await apiService.request('/api/generate', {
                         method: 'POST',
                         body: JSON.stringify({ slim: presentation.content })
@@ -186,7 +170,6 @@ async function handleSave() {
                         throw new Error('Сървърът не върна ID на новата презентация');
                     }
 
-                    // Обнови с пълните данни
                     await apiService.request(`/api/presentation?id=${newId}`, {
                         method: 'PUT',
                         body: JSON.stringify(fullData)
@@ -196,11 +179,10 @@ async function handleSave() {
                     fileManager.update(presentation);
                     showStatus('Презентацията е качена в облака (създадена нова)', 'success');
                 } else {
-                    throw updateError; // Препредай други грешки
+                    throw updateError;
                 }
             }
         } else {
-            // ✅ Нова презентация – първо създаване
             const createResponse = await apiService.request('/api/generate', {
                 method: 'POST',
                 body: JSON.stringify({ slim: presentation.content })
@@ -211,7 +193,6 @@ async function handleSave() {
                 throw new Error('Сървърът не върна ID на новата презентация');
             }
 
-            // ✅ Веднага обновяване с пълните данни (заглавие, тип и т.н.)
             await apiService.request(`/api/presentation?id=${newId}`, {
                 method: 'PUT',
                 body: JSON.stringify(fullData)
@@ -231,7 +212,6 @@ async function handleSave() {
     }
 }
 
-// Helper: extract first few lines as description
 function extractDescription(content) {
     const lines = content.split('\n').filter(l => l.trim() && !l.startsWith('#'));
     return lines.slice(0, 2).join(' ').substring(0, 200) || 'Няма описание';
@@ -318,7 +298,6 @@ function closePreview() {
     modal.classList.remove('active');
 }
 
-// ---------- Editor state ----------
 function handleEditorChange() {
     const editor = document.getElementById('slim-editor');
     const content = editor.value;
@@ -368,7 +347,6 @@ function updateFileStatus() {
     }
 }
 
-// ---------- File list & context menu ----------
 function loadFileList() {
     const fileList = document.getElementById('file-list');
     const presentations = fileManager.sortByDate();
@@ -427,9 +405,7 @@ function loadPresentationInEditor(presentation) {
     loadFileList();
 }
 
-// ---------- Context menu (unchanged) ----------
 function showContextMenu(e, presentationId) {
-    // ... (same as before, no changes needed)
     e.preventDefault();
     e.stopPropagation();
 
@@ -504,7 +480,6 @@ function deletePresentation(id) {
         return;
     }
 
-    // Also delete from server if it exists there
     if (presentation.serverId) {
         apiService.deletePresentation(presentation.serverId).catch(console.error);
     }
@@ -553,9 +528,7 @@ function viewInDashboard(id) {
     });
 }
 
-// ---------- Preview parsing (unchanged) ----------
 function parseSlimContent(content) {
-    // ... (same as before)
     const lines = content.split('\n');
     const slides = [];
     let currentSlide = null;
@@ -591,7 +564,6 @@ function parseSlimContent(content) {
 }
 
 function generatePreviewHTML(slides) {
-    // ... (same as before)
     return slides.map((slide, index) => `
         <div class="preview-slide" style="
             margin-bottom: 30px;
@@ -612,7 +584,6 @@ function generatePreviewHTML(slides) {
 }
 
 function generateSlideContent(slide) {
-    // ... (same as before)
     switch (slide.type) {
         case 'title':
             return `
@@ -637,7 +608,6 @@ function generateSlideContent(slide) {
     }
 }
 
-// ---------- Theme ----------
 function toggleTheme() {
     currentTheme = currentTheme === 'light' ? 'dark' : 'light';
     setTheme(currentTheme);
@@ -656,7 +626,6 @@ function loadTheme() {
     setTheme(savedTheme);
 }
 
-// ---------- UI helpers ----------
 function switchTab(tabName) {
     document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.tab === tabName);
@@ -688,7 +657,6 @@ function handleKeyboardShortcuts(e) {
     }
 }
 
-// ---------- Auto-save ----------
 function startAutoSave() {
     autoSaveInterval = setInterval(() => {
         if (fileManager.hasUnsavedChanges() && fileManager.getCurrentFile()) {
@@ -698,7 +666,6 @@ function startAutoSave() {
     }, 30000);
 }
 
-// ---------- Session management ----------
 function loadLastOrCreateNew() {
     const urlParams = new URLSearchParams(window.location.search);
     const loadId = urlParams.get('load');
@@ -724,7 +691,6 @@ function loadLastOrCreateNew() {
     }
 }
 
-// ---------- Status & notifications ----------
 function updateStatus(message) {
     document.getElementById('status-message').textContent = message;
 }
@@ -752,7 +718,6 @@ function showStatus(message, type = 'info') {
     }, 3000);
 }
 
-// ---------- Utilities ----------
 function escapeHtml(text) {
     if (!text) return '';
     return String(text)
@@ -778,7 +743,6 @@ function formatDate(isoString) {
     return date.toLocaleDateString('bg-BG');
 }
 
-// ---------- Beforeunload warning ----------
 window.addEventListener('beforeunload', (e) => {
     if (fileManager && fileManager.hasUnsavedChanges()) {
         e.preventDefault();
@@ -786,7 +750,6 @@ window.addEventListener('beforeunload', (e) => {
     }
 });
 
-// ---------- Expose functions to global scope ----------
 window.loadPresentation = loadPresentation;
 window.loadFileList = loadFileList;
 window.loadPresentationInEditor = loadPresentationInEditor;

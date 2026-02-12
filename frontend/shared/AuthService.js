@@ -9,7 +9,6 @@ class AuthService {
     }
 
     detectBaseURL() {
-        // ----- 1. Script path detection (preferred) -----
         try {
             let scriptUrl = null;
             if (document.currentScript) {
@@ -37,7 +36,6 @@ class AuthService {
             console.warn('[Auth] Script detection failed, falling back to page URL');
         }
 
-        // ----- 2. Page URL fallback -----
         const origin = window.location.origin;
         let pathname = window.location.pathname;
         if (pathname.endsWith('/')) pathname = pathname.slice(0, -1);
@@ -48,7 +46,6 @@ class AuthService {
             return `${origin}${projectPath}/backend/public`.replace(/\/$/, '');
         }
 
-        // ----- 3. Last resort -----
         console.warn('[Auth] Using root-level backend fallback');
         return `${origin}/backend/public`.replace(/\/$/, '');
     }
@@ -135,8 +132,7 @@ class AuthService {
                 this.clearAuth();
                 return null;
             }
-    
-            // DO NOT overwrite token
+
             localStorage.setItem(this.userKey, JSON.stringify(data.data));
     
             return data.data;
