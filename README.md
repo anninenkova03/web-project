@@ -4,15 +4,15 @@ A full-stack presentation management system with a custom SLIM markup language f
 
 ## Features
 
-- ✅ **SLIM Markup Editor** - Simple markup language for creating presentations
-- ✅ **Real-time Preview** - See your presentation as you type
-- ✅ **Dashboard** - Manage all your presentations
-- ✅ **Slide Viewer** - Full presentation viewing experience
-- ✅ **Slide Map** - Visual navigation of presentation structure
-- ✅ **Backend API** - Full REST API with CRUD operations
-- ✅ **MySQL Database** - Persistent storage
-- ✅ **HTML Generator** - Generate static HTML presentations
-- ✅ **LocalStorage Integration** - Offline editing capability
+- **SLIM Markup Editor** - Simple markup language for creating presentations
+- **Real-time Preview** - See your presentation as you type
+- **Dashboard** - Manage all your presentations
+- **Slide Viewer** - Full presentation viewing experience
+- **Slide Map** - Visual navigation of presentation structure
+- **Backend API** - Full REST API with CRUD operations
+- **MySQL Database** - Persistent storage
+- **HTML Generator** - Generate static HTML presentations
+- **LocalStorage Integration** - Offline editing capability
 
 ## Architecture
 
@@ -254,133 +254,18 @@ Health check endpoint
 2. Click "Delete" on a presentation
 3. Confirm deletion
 
-## Development
-
-### Project Structure
-```
-web-project/
-├── backend/
-│   ├── app/
-│   │   ├── controllers/
-│   │   │   └── PresentationController.php
-│   │   ├── core/
-│   │   │   ├── generator/
-│   │   │   │   └── HtmlGenerator.php
-│   │   │   ├── model/
-│   │   │   │   ├── Presentation.php
-│   │   │   │   └── Slide.php
-│   │   │   └── parser/
-│   │   │       └── SlimParser.php
-│   │   ├── repositories/
-│   │   │   ├── PresentationRepository.php
-│   │   │   └── SlideRepository.php
-│   │   └── services/
-│   │       └── PresentationService.php
-│   ├── config/
-│   │   ├── config.php
-│   │   └── database.php
-│   ├── db/
-│   │   └── init.sql
-│   ├── generated/
-│   │   └── presentations/
-│   └── public/
-│       └── index.php
-└── frontend/
-    ├── dashboard/
-    │   ├── dashboard.html
-    │   ├── dashboard.css
-    │   └── dashboard.js
-    ├── editor/
-    │   ├── editor.html
-    │   ├── editor.css
-    │   ├── editor.js
-    │   ├── fileManager.js
-    │   ├── slimValidator.js
-    │   └── syntaxHighlight.js
-    ├── shared/
-    │   ├── APIService.js
-    │   ├── components.js
-    │   ├── theme.css
-    │   └── utils.js
-    ├── slide-map/
-    │   ├── map.html
-    │   ├── map.css
-    │   └── map.js
-    ├── viewer/
-    │   ├── viewer.html
-    │   ├── viewer.css
-    │   └── viewer.js
-    ├── data.js
-    └── presentationBridge.js
-```
-
-### Adding New Slide Types
-
-1. Add to `backend/db/init.sql`:
-```sql
-INSERT INTO slide_types (name) VALUES ('your-new-type');
-```
-
-2. Update `SlimParser.php` to handle new type
-
-3. Update `HtmlGenerator.php` to generate HTML for new type
-
-4. Update frontend viewer to display new type
-
-## Troubleshooting
-
-### Database Connection Errors
-- Check credentials in `backend/config/database.php`
-- Ensure MySQL service is running
-- Verify database exists
-
-### API Not Working
-- Check browser console for CORS errors
-- Verify `baseURL` in `APIService.js`
-- Ensure `.htaccess` is configured (Apache)
-- Check PHP error logs
-
-### Generated HTML Not Found
-- Verify write permissions on `backend/generated/presentations/`
-- Check if `HtmlGenerator.php` is running without errors
-
-### LocalStorage Issues
-- Clear browser cache and localStorage
-- Try incognito/private mode
-- Check browser console for errors
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - feel free to use this project for learning or production.
-
-## Support
-
-For issues or questions:
-- Check the troubleshooting section
-- Review the code documentation
-- Open an issue on GitHub
-
 ## Future Enhancements
-
-- [ ] User authentication
-- [ ] Presentation sharing
-- [ ] Export to PDF/PPTX
-- [ ] Collaborative editing
-- [ ] Presentation templates
-- [ ] Media library
-- [ ] Analytics and tracking
-- [ ] Mobile responsive viewer
-- [ ] Real-time collaboration
-- [ ] Version control
+- Presentation sharing
+- Export to PDF/PPTX
+- Collaborative editing
+- Presentation templates
+- Media library
+- Analytics and tracking
+- Mobile responsive viewer
+- Real-time collaboration
+- Version control
 
 ---
 
-Happy presenting! 🎯
+### Забележка !!!
+Подробна документация можете да намерите във файла documentation.
